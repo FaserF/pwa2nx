@@ -22,7 +22,7 @@ struct MemoryStruct {
     size_t size;
 };
 
-static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+static size_t WriteMemoryCallback(const void *contents, size_t size, size_t nmemb, void *userp) {
     size_t realsize = size * nmemb;
     struct MemoryStruct *mem = (struct MemoryStruct *)userp;
 
@@ -37,7 +37,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
     return realsize;
 }
 
-static size_t WriteFileCallback(void *ptr, size_t size, size_t nmemb, FILE *stream) {
+static size_t WriteFileCallback(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
     return fwrite(ptr, size, nmemb, stream);
 }
 
@@ -81,11 +81,11 @@ void check_and_apply_updates(int argc, char* argv[]) {
 
     if(res == CURLE_OK) {
         // Parse the body to find `"tag_name":"vX.Y.Z"`
-        char *tag_loc = strstr(chunk.memory, "\"tag_name\":");
+        const char *tag_loc = strstr(chunk.memory, "\"tag_name\":");
         
         if (tag_loc) {
             char version[32] = {0};
-            sscanf(tag_loc, "\"tag_name\":\"%[^\"]\"", version);
+            sscanf(tag_loc, "\"tag_name\":\"%31[^\"]\"", version);
 
             // Compare version
             printf("Latest version available: %s\n", version);
@@ -108,7 +108,7 @@ void check_and_apply_updates(int argc, char* argv[]) {
             // Find matching asset browser_download_url
             char search_name[256];
             snprintf(search_name, sizeof(search_name), "\"name\":\"%s\"", target_asset);
-            char *asset_pos = strstr(chunk.memory, search_name);
+            const char *asset_pos = strstr(chunk.memory, search_name);
             
             // If the specific app build asset doesn't exist in this release, try fallback
             if (!asset_pos) {
@@ -119,9 +119,9 @@ void check_and_apply_updates(int argc, char* argv[]) {
                 asset_pos = strstr(chunk.memory, ".nro");
                 if (asset_pos) {
                     // Try to scan backwards or forward for name boundary
-                    char *name_start = strstr(chunk.memory, "\"name\":\"");
+                    const char *name_start = strstr(chunk.memory, "\"name\":\"");
                     if (name_start) {
-                        sscanf(name_start, "\"name\":\"%[^\"]\"", target_asset);
+                        sscanf(name_start, "\"name\":\"%127[^\"]\"", target_asset);
                         asset_pos = strstr(chunk.memory, name_start);
                     }
                 }
@@ -129,10 +129,10 @@ void check_and_apply_updates(int argc, char* argv[]) {
 
             char download_url[512] = {0};
             if (asset_pos) {
-                char *url_start = strstr(asset_pos, "\"browser_download_url\":\"");
+                const char *url_start = strstr(asset_pos, "\"browser_download_url\":\"");
                 if (url_start) {
                     url_start += strlen("\"browser_download_url\":\"");
-                    sscanf(url_start, "%[^\"]", download_url);
+                    sscanf(url_start, "%511[^\"]", download_url);
                 }
             }
 

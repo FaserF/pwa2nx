@@ -63,13 +63,13 @@ int main(int argc, char* argv[]) {
 
         // Simple software keyboard input
         SwkbdConfig kbd;
-        char input_url[512] = {0};
         Result kbd_rc = swkbdCreate(&kbd, 0);
         if (R_SUCCEEDED(kbd_rc)) {
             swkbdConfigMakePresetDefault(&kbd);
             swkbdConfigSetInitialText(&kbd, "https://");
             swkbdConfigSetGuideText(&kbd, "Enter website or PWA URL to launch:");
             
+            char input_url[512] = {0};
             kbd_rc = swkbdShow(&kbd, input_url, sizeof(input_url) - 1);
             if (R_SUCCEEDED(kbd_rc) && strlen(input_url) > 0) {
                 strncpy(final_url, input_url, sizeof(final_url) - 1);

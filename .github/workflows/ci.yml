@@ -76,4 +76,5 @@ jobs:
 
       - name: Compile Switch Wrapper
         run: |
+          export PATH="/opt/devkitpro/devkitA64/bin:$PATH"
           make clean && make -j$(nproc)

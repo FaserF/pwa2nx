@@ -87,7 +87,7 @@ jobs:
     needs: [preflight, risk-analysis]
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps:set-matrix.outputs.matrix }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - id: set-matrix
         run: |
@@ -152,6 +152,7 @@ jobs:
 
       - name: Build NRO
         run: |
+          export PATH="/opt/devkitpro/devkitA64/bin:$PATH"
           make clean && make -j$(nproc)
 
       - name: Create Release Artifacts
@@ -226,7 +227,7 @@ jobs:
         if: github.event.inputs.allow_re_release == 'true'
         shell: bash
         run: |
-          TAG="${{ steps:meta.outputs.tag }}"
+          TAG="${{ steps.meta.outputs.tag }}"
           gh release delete "${TAG}" --yes || true
           git push --delete origin "${TAG}" || true
         env:
@@ -239,8 +240,8 @@ jobs:
           files: |
             artifacts/*_Switch.zip
             artifacts/*.nro
-          name: ${{ steps:meta.outputs.title }}
-          tag_name: ${{ steps:meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.title }}
+          tag_name: ${{ steps.meta.outputs.tag }}
           body_path: body.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -262,7 +263,7 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          TAG="${{ steps:meta.outputs.tag }}"
+          TAG="${{ steps.meta.outputs.tag }}"
           echo "Build failed. Rolling back created tag/draft if any..."
           gh release delete "${TAG}" --yes || true
           git push --delete origin "${TAG}" || true
