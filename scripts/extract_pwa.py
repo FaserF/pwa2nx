@@ -74,7 +74,9 @@ def main() -> None:
     target_url = args.url
     icon_src = args.icon
 
-    manifest_url = fetch_manifest_url(target_url)
+    is_universal = target_url.strip().lower() == "universal"
+
+    manifest_url = None if is_universal else fetch_manifest_url(target_url)
     manifest_data = {}
 
     if manifest_url:
