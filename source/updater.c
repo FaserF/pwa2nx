@@ -12,7 +12,7 @@
 #ifdef GITHUB_REPO
 #define GITHUB_RELEASE_API "https://api.github.com/repos/" GITHUB_REPO "/releases/latest"
 #else
-#define GITHUB_RELEASE_API "https://api.github.com/repos/fabian-seitz/pwa2nx/releases/latest"
+#define GITHUB_RELEASE_API "https://api.github.com/repos/FaserF/pwa2nx/releases/latest"
 #endif
 
 #define USER_AGENT "pwa2nx-updater/1.0"
@@ -148,13 +148,13 @@ void check_and_apply_updates(int argc, char* argv[]) {
 #ifdef SAFE_NAME
                     snprintf(write_path, sizeof(write_path), "sdmc:/switch/pwa2nx/%s.nro", SAFE_NAME);
 #else
-                    strncpy(write_path, "sdmc:/switch/pwa2nx/pwa2nx.nro", sizeof(write_path) - 1);
+                    snprintf(write_path, sizeof(write_path), "sdmc:/switch/pwa2nx/pwa2nx.nro");
 #endif
                 }
 
                 // Create directory hierarchy if it doesn't exist
                 char dir_path[512];
-                strncpy(dir_path, write_path, sizeof(dir_path) - 1);
+                snprintf(dir_path, sizeof(dir_path), "%s", write_path);
                 char *last_slash = strrchr(dir_path, '/');
                 if (last_slash) {
                     *last_slash = '\0';

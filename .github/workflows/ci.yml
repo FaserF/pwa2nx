@@ -24,7 +24,7 @@ jobs:
       - name: Install Linting & Test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff Pillow requests pytest
+          pip install ruff Pillow requests beautifulsoup4 pytest
 
       - name: Check JSON Validity
         run: |
@@ -51,3 +51,29 @@ jobs:
 
       - name: Run Python Unit Tests
         run: pytest tests/
+
+  compile-check:
+    name: Compile Verification (devkitPro)
+    runs-on: ubuntu-latest
+    container: devkitpro/devkita64:latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache APT packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-apt-cache
+
+      - name: Install build dependencies
+        run: |
+          apt-get update && apt-get install -y python3-pip python3-pillow python3-requests python3-bs4 curl jq zip
+
+      - name: Generate Dummy Configuration
+        run: |
+          python3 scripts/extract_pwa.py --url universal --name "Universal App"
+
+      - name: Compile Switch Wrapper
+        run: |
+          make clean && make -j$(nproc)

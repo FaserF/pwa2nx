@@ -127,7 +127,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          apt-get update && apt-get install -y python3-pip python3-pillow python3-requests curl jq zip
+          apt-get update && apt-get install -y python3-pip python3-pillow python3-requests python3-bs4 curl jq zip
           
       - name: Extract PWA details and generate assets
         shell: bash

@@ -20,14 +20,17 @@ ARCH		:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS		:=	-g -Wall -O2 -ffunction-sections \
 				$(ARCH) -D__SWITCH__
 
+PORTLIBS	?=	$(DEVKITPRO)/portlibs/switch
+INCLUDE		?=	-I$(DEVKITPRO)/libnx/include
+
 CFLAGS		+=	$(INCLUDE) -I$(CURDIR)/$(SOURCES) -I$(PORTLIBS)/include
 
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS		:=	-g $(ARCH)
-LDFLAGS		=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS		=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map) -L$(DEVKITPRO)/libnx/lib -L$(PORTLIBS)/lib
 
-LIBS	:=	-lcurl -lssl -lcrypto -lswkbd -lpsel -lnx -lz
+LIBS	:=	-lcurl -lmbedtls -lmbedx509 -lmbedcrypto -lnx -lz
 
 #---------------------------------------------------------------------------------
 # Tools configuration
@@ -43,7 +46,7 @@ NM		:=	$(PREFIX)nm
 #---------------------------------------------------------------------------------
 # libnx tools
 #---------------------------------------------------------------------------------
-NACP	:=	nacp
+NACP	:=	nacptool
 ELF2NRO	:=	elf2nro
 
 #---------------------------------------------------------------------------------
@@ -82,7 +85,7 @@ $(ELFFILE): $(OFILES)
 
 $(NACPFILE):
 	@echo Creating NACP...
-	@$(NACP) -c --name="$(APP_TITLE)" --author="$(APP_AUTHOR)" --version="$(APP_VERSION)" $@
+	@$(NACP) --create "$(APP_TITLE)" "$(APP_AUTHOR)" "$(APP_VERSION)" $@
 
 $(BUILD)/%.o: $(SOURCES)/%.c
 	@mkdir -p $(dir $@)

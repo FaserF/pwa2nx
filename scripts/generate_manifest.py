@@ -1,15 +1,16 @@
 import os
 import json
 
-def main():
+
+def main() -> None:
     # 1. Gather Metadata
     metadata = {
         "name": "pwa2nx",
         "description": "Convert Progressive Web Apps (PWAs) and standard websites into native wrappers on the Nintendo Switch utilizing the internal NetFront NX WebKit applet.",
         "entry_points": {
             "c_main": "source/main.c",
-            "python_script": "scripts/extract_pwa.py"
-        }
+            "python_script": "scripts/extract_pwa.py",
+        },
     }
 
     # 2. Populate File Tree
@@ -24,18 +25,15 @@ def main():
         "scripts/extract_pwa.py": "Downloads PWA manifests, extracts/resizes icons, and writes C configuration headers",
         "Makefile": "devkitPro compiler makefile configuring flags, libnx libraries, and compilation tasks",
         "app.json": "Metadata structure for Homebrew App Store distribution compatibility",
-        ".github/workflows/build-and-release.yml": "CI/CD pipeline triggering automated PWA extraction, NRO compilation, and GitHub Release generation"
+        ".github/workflows/build-and-release.yml": "CI/CD pipeline triggering automated PWA extraction, NRO compilation, and GitHub Release generation",
     }
 
-    manifest = {
-        "metadata": metadata,
-        "file_tree": file_tree
-    }
+    manifest = {"metadata": metadata, "file_tree": file_tree}
 
     # Write Manifest if it changed
     manifest_path = "project_manifest.json"
     new_content = json.dumps(manifest, indent=2) + "\n"
-    
+
     if os.path.exists(manifest_path):
         with open(manifest_path, "r", encoding="utf-8") as f:
             old_content = f.read()
@@ -46,6 +44,7 @@ def main():
     with open(manifest_path, "w", encoding="utf-8") as f:
         f.write(new_content)
     print("Generated project_manifest.json")
+
 
 if __name__ == "__main__":
     main()

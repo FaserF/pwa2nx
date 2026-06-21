@@ -4,7 +4,7 @@
   <img src="source/icon.png" width="128" height="128" alt="pwa2nx Logo">
 </p>
 
-[![Build and Release PWA to Switch](https://github.com/fabian-seitz/pwa2nx/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/fabian-seitz/pwa2nx/actions/workflows/build-and-release.yml)
+[![Build and Release PWA to Switch](https://github.com/FaserF/pwa2nx/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/FaserF/pwa2nx/actions/workflows/build-and-release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **pwa2nx** is a highly automated, universal web-to-Switch translator that packages Progressive Web Apps (PWAs) and standard websites into ready-to-install Nintendo Switch homebrew applications (`.nro` / Appstore `.zip`).

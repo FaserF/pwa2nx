@@ -126,7 +126,7 @@ void launch_web_applet(const char* url, AccountUid* uid, bool has_uid) {
     }
 
     // Modern wrapper options
-    webConfigSetMediaControlsPlayMode(&config, WebMediaControlsPlayMode_Play);
+    webConfigSetMediaAutoPlay(&config, true);
     webConfigSetWhitelist(&config, "^http.*$"); // Dynamic whitelist allowing all HTTP/S navigation
 
 #if defined(ENABLE_BACKGROUND_PLAYBACK) && ENABLE_BACKGROUND_PLAYBACK == 1
@@ -134,7 +134,7 @@ void launch_web_applet(const char* url, AccountUid* uid, bool has_uid) {
 #endif
 
     // Execute applet
-    WebCommonReturnValue out;
+    WebCommonReply out;
     rc = webConfigShow(&config, &out);
     if (R_FAILED(rc)) {
         printf("Web Applet exited with error code: 0x%08X\n", rc);
