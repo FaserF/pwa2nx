@@ -61,7 +61,9 @@ def main():
         for s in selections:
             found = False
             for a in apps:
-                if a["name"].lower() == s:
+                # Match exact name, or if app name contains the search term
+                a_lower = a["name"].lower()
+                if a_lower == s or a_lower.startswith(s) or s in a_lower:
                     selected_apps.append(a)
                     found = True
                     break

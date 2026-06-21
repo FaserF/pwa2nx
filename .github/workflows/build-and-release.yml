@@ -151,7 +151,10 @@ jobs:
             echo "new_app_added=false" >> $GITHUB_OUTPUT
           fi
 
-          echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
+          # Use heredoc to safely write JSON to GITHUB_OUTPUT
+          echo "matrix<<EOF" >> $GITHUB_OUTPUT
+          echo "$MATRIX" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Upload updated supported_apps.json
         if: steps.set-matrix.outputs.new_app_added == 'true'
