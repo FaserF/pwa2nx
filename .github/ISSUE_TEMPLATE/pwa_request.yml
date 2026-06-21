@@ -1,0 +1,64 @@
+name: 🌐 PWA App Integration Request
+description: Request a new officially supported/pre-configured PWA app
+title: '[PWA REQUEST]: '
+labels: ['pwa-request', 'triage']
+assignees:
+  - FaserF
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Before submitting
+        - 🔍 Search [existing PWA requests](https://github.com/FaserF/pwa2nx/issues?q=label%3Apwa-request) to avoid duplicates
+        - 📖 Check the [documentation](https://github.com/FaserF/pwa2nx/blob/main/README.md)
+
+  - type: input
+    id: app_name
+    attributes:
+      label: App Name
+      description: What is the name of the application or website?
+      placeholder: e.g. Spotify Web Player
+    validations:
+      required: true
+
+  - type: input
+    id: app_url
+    attributes:
+      label: Target PWA URL
+      description: What is the base URL of the website or PWA?
+      placeholder: e.g. https://open.spotify.com
+    validations:
+      required: true
+
+  - type: input
+    id: icon_url
+    attributes:
+      label: High-Quality PNG Icon URL (Optional)
+      description: Provide a link to a high-quality (preferably 256x256 or 512x512) logo.
+      placeholder: e.g. https://example.com/logo.png
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-verification Checks
+      options:
+        - label: I have tested this URL in the Switch's internal browser or via "Universal Mode" and confirmed that layout, navigation, and controls function.
+          required: true
+        - label: This website is a Progressive Web App (PWA) or is mobile-friendly.
+          required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: |
+        Provide any specific configurations needed (e.g. requires user-agent spoofing, specific cookie policies, or keyboard interaction overrides).
+        
+        ---
+        
+        > [!IMPORTANT]
+        > **Disclaimer:** This project is an unofficial wrapper wrapper and is in no way affiliated, associated, authorized, endorsed by, or in any way officially connected with the creators or operators of the supported PWA platforms (e.g. Disney+, Telegram, Home Assistant, Spotify, SoundCloud, YouTube Music, etc.). All product names, logos, and brands are property of their respective owners.
+    validations:
+      required: false

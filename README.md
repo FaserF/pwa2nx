@@ -57,9 +57,9 @@ You don't need to install devkitPro locally. The entire build pipeline is offloa
 ```
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
-│   │   ├── bug_report.md           # Issue report template
-│   │   ├── feature_request.md      # Feature request template
-│   │   └── pwa_request.md          # Dedicated PWA support template
+│   │   ├── bug_report.yml          # Issue report form
+│   │   ├── feature_request.yml     # Feature request form
+│   │   └── pwa_request.yml         # Dedicated PWA support form
 │   ├── labeler.yml                 # File path mappings to labels
 │   ├── pull_request_template.md    # Pull Request description template
 │   └── workflows/

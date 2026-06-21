@@ -252,9 +252,14 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Update template placeholders for the released version
+          RELEASE_TAG="${{ steps.meta.outputs.tag }}"
+          python3 scripts/update_templates.py "${RELEASE_TAG#v}"
+          
           python3 scripts/version_manager.py --bump dev
-          git add Makefile app.json
-          git commit -m "chore: bump version to development cycle [skip ci]"
+          git add Makefile app.json .github/ISSUE_TEMPLATE/bug_report.yml
+          git commit -m "chore: bump version to development cycle & update template placeholders [skip ci]"
           git push origin HEAD:${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
