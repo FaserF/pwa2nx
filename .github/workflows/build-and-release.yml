@@ -171,7 +171,7 @@ jobs:
           cp pwa2nx.nro ${SAFE_NAME}.nro
 
       - name: Upload Artifacts for Release Job
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: build-assets-${{ matrix.name }}
           path: |
@@ -190,7 +190,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download all build artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
