@@ -1,209 +1,195 @@
 #!/usr/bin/env python3
 import argparse
-import re
-import sys
 import json
+import re
+import subprocess
+import sys
 
 MAKEFILE_PATH = "Makefile"
 APP_JSON_PATH = "app.json"
 
 
-def get_current_version() -> str | None:
-    version = None
-    # Read from Makefile first
+def get_current_version() -> str:
+    """Get current version from git tags first, then app.json, then Makefile."""
     try:
-        with open(MAKEFILE_PATH, "r") as f:
+        tags = (
+            subprocess.check_output(["git", "tag"], stderr=subprocess.DEVNULL)
+            .decode()
+            .splitlines()
+        )
+        v_tags = []
+        for tag in tags:
+            tag = tag.strip()
+            match = re.match(r"^v?(\d+)\.(\d+)\.(\d+)(?:(b)(\d+)|(-dev)(\d+))?$", tag)
+            if match:
+                y, m, p, bp, bn, dp, dn = match.groups()
+                v_tags.append({
+                    "tag": tag,
+                    "key": (
+                        int(y), int(m), int(p),
+                        (1 if bp else (0 if dp else 2)),
+                        (int(bn) if bp else (int(dn) if dp else 0)),
+                    ),
+                })
+        if v_tags:
+            return sorted(v_tags, key=lambda x: x["key"], reverse=True)[0]["tag"].lstrip("v")
+    except subprocess.CalledProcessError:
+        pass
+
+    # Fallback: app.json
+    try:
+        with open(APP_JSON_PATH, "r", encoding="utf-8") as f:
+            return json.load(f).get("version", "0.0.0")
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+
+    # Fallback: Makefile
+    try:
+        with open(MAKEFILE_PATH, "r", encoding="utf-8") as f:
             content = f.read()
         match = re.search(r"^APP_VERSION\s*:=\s*([^\s#]+)", content, re.MULTILINE)
         if match:
-            version = match.group(1).strip('"')
+            return match.group(1).strip('"')
     except FileNotFoundError:
         pass
 
-    if not version:
-        # Fallback/cross-check with app.json
-        try:
-            with open(APP_JSON_PATH, "r") as f:
-                data = json.load(f)
-                version = data.get("version")
-        except (FileNotFoundError, json.JSONDecodeError):
-            pass
-
-    return version
+    return "0.0.0"
 
 
-def parse_semver(version_str: str) -> dict[str, int | str]:
-    # Matches semantic versions e.g. 1.0.0, 1.0.0-beta.1, 1.0.0-dev.2+sha
-    pattern = r"^(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z0-9\.]+))?(?:\+([a-zA-Z0-9\.]+))?$"
-    match = re.match(pattern, version_str)
+def calculate_version(
+    rtype: str,
+    level: str = "patch",
+    curr: str | None = None,
+    override: str | None = None,
+) -> str:
+    if override and override.strip():
+        return override.strip().lstrip("v")
+
+    if curr is None:
+        curr = get_current_version()
+
+    match = re.match(r"^v?(\d+)\.(\d+)\.(\d+)(?:(b)(\d+)|(-dev)(\d+))?$", curr)
     if not match:
-        raise ValueError(f"Invalid semantic version: {version_str}")
-    major, minor, patch, prerelease, build = match.groups()
-    return {
-        "major": int(major),
-        "minor": int(minor),
-        "patch": int(patch),
-        "prerelease": prerelease or "",
-        "build": build or "",
-    }
+        return "0.0.0"
+
+    v1_str, v2_str, v3_str, b_p, b_n, d_p, d_n = match.groups()
+    v1, v2, v3 = int(v1_str), int(v2_str), int(v3_str)
+    stype = "b" if b_p else ("-dev" if d_p else None)
+    snum = int(b_n) if b_p else (int(d_n) if d_p else 0)
+
+    if rtype == "stable":
+        if stype:
+            return f"{v1}.{v2}.{v3}"
+        if level == "major":
+            return f"{v1 + 1}.0.0"
+        if level == "minor":
+            return f"{v1}.{v2 + 1}.0"
+        return f"{v1}.{v2}.{v3 + 1}"
+    if rtype == "beta":
+        if stype == "b":
+            return f"{v1}.{v2}.{v3}b{snum + 1}"
+        if level == "major":
+            return f"{v1 + 1}.0.0b0"
+        if level == "minor":
+            return f"{v1}.{v2 + 1}.0b0"
+        return f"{v1}.{v2}.{v3 + 1}b0"
+    if rtype in ["dev", "nightly"]:
+        if stype == "-dev":
+            return f"{v1}.{v2}.{v3}-dev{snum + 1}"
+        if level == "major":
+            return f"{v1 + 1}.0.0-dev0"
+        if level == "minor":
+            return f"{v1}.{v2 + 1}.0-dev0"
+        return f"{v1}.{v2}.{v3 + 1}-dev0"
+
+    return curr
 
 
-def stringify_semver(parsed: dict[str, int | str]) -> str:
-    version = f"{parsed['major']}.{parsed['minor']}.{parsed['patch']}"
-    if parsed["prerelease"]:
-        version += f"-{parsed['prerelease']}"
-    if parsed["build"]:
-        version += f"+{parsed['build']}"
-    return version
-
-
-def bump_version(parsed: dict[str, int | str], bump_type: str) -> dict[str, int | str]:
-    major = int(parsed["major"])
-    minor = int(parsed["minor"])
-    patch = int(parsed["patch"])
-    prerelease = str(parsed["prerelease"])
-    build = str(parsed["build"])
-
-    if bump_type == "major":
-        major += 1
-        minor = 0
-        patch = 0
-        prerelease = ""
-        build = ""
-    elif bump_type == "minor":
-        minor += 1
-        patch = 0
-        prerelease = ""
-        build = ""
-    elif bump_type == "patch":
-        patch += 1
-        prerelease = ""
-        build = ""
-    elif bump_type == "beta":
-        # e.g., 1.0.0-beta.0 -> 1.0.0-beta.1
-        # or 1.0.0 -> 1.0.1-beta.0
-        pre = prerelease
-        if pre.startswith("beta."):
-            try:
-                num = int(pre.split(".")[1])
-                prerelease = f"beta.{num + 1}"
-            except ValueError:
-                prerelease = "beta.0"
-        else:
-            if not pre:
-                patch += 1
-            prerelease = "beta.0"
-        build = ""
-    elif bump_type == "dev":
-        pre = prerelease
-        if pre.startswith("dev."):
-            try:
-                num = int(pre.split(".")[1])
-                prerelease = f"dev.{num + 1}"
-            except ValueError:
-                prerelease = "dev.0"
-        else:
-            if not pre:
-                patch += 1
-            prerelease = "dev.0"
-        build = ""
-
-    parsed["major"] = major
-    parsed["minor"] = minor
-    parsed["patch"] = patch
-    parsed["prerelease"] = prerelease
-    parsed["build"] = build
-    return parsed
-
-
-def update_files(new_version: str, dry_run: bool = False) -> None:
+def write_version(new_version: str) -> None:
     # Update Makefile
     try:
-        with open(MAKEFILE_PATH, "r") as f:
-            makefile_content = f.read()
-
-        # Replace version line
-        updated_makefile, count = re.subn(
+        with open(MAKEFILE_PATH, "r", encoding="utf-8") as f:
+            content = f.read()
+        updated, count = re.subn(
             r"^(APP_VERSION\s*:=\s*)([^\s#]+)",
-            f"\\g<1>{new_version}",
-            makefile_content,
+            rf"\g<1>{new_version}",
+            content,
             flags=re.MULTILINE,
         )
         if count > 0:
-            if dry_run:
-                print(
-                    f"[DRY-RUN] Would update {MAKEFILE_PATH} with APP_VERSION := {new_version}"
-                )
-            else:
-                with open(MAKEFILE_PATH, "w") as f:
-                    f.write(updated_makefile)
-                print(f"Updated {MAKEFILE_PATH} version to {new_version}")
-        else:
-            print(f"Warning: APP_VERSION not found in {MAKEFILE_PATH}")
+            with open(MAKEFILE_PATH, "w", encoding="utf-8") as f:
+                f.write(updated)
+            print(f"Updated {MAKEFILE_PATH} APP_VERSION → {new_version}", file=sys.stderr)
     except FileNotFoundError:
-        print(f"Error: {MAKEFILE_PATH} not found.")
+        pass
 
     # Update app.json
     try:
-        with open(APP_JSON_PATH, "r") as f:
-            app_json_data = json.load(f)
-
-        old_val = app_json_data.get("version")
-        app_json_data["version"] = new_version
-
-        if dry_run:
-            print(f"[DRY-RUN] Would update {APP_JSON_PATH} version to {new_version}")
-        else:
-            with open(APP_JSON_PATH, "w") as f:
-                json.dump(app_json_data, f, indent=2)
-            print(f"Updated {APP_JSON_PATH} version from {old_val} to {new_version}")
-    except FileNotFoundError:
-        print(f"Warning: {APP_JSON_PATH} not found.")
-    except json.JSONDecodeError:
-        print(f"Error: Failed to parse {APP_JSON_PATH}")
+        with open(APP_JSON_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        data["version"] = new_version
+        with open(APP_JSON_PATH, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+            f.write("\n")
+        print(f"Updated {APP_JSON_PATH} version → {new_version}", file=sys.stderr)
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Manage project semantic version.")
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--get", action="store_true", help="Print the current version.")
-    group.add_argument("--set", help="Explicitly set a version.")
-    group.add_argument(
+    subparsers = parser.add_subparsers(dest="command")
+
+    # ha-openwrt-style subcommand: scripts/version_manager.py bump --type stable --level patch
+    bump_parser = subparsers.add_parser("bump")
+    bump_parser.add_argument("--type", choices=["stable", "beta", "dev", "nightly"], required=True)
+    bump_parser.add_argument("--level", choices=["major", "minor", "patch"], default="patch")
+    bump_parser.add_argument("--override", default=None)
+
+    # Legacy flat flags kept for backward compat
+    parser.add_argument("--get", action="store_true", help="Print current version.")
+    parser.add_argument("--set", help="Set explicit version.")
+    parser.add_argument(
         "--bump",
         choices=["major", "minor", "patch", "beta", "dev"],
-        help="Bump version level.",
-    )
-    parser.add_argument("--build-metadata", help="Add build metadata (e.g. git SHA).")
-    parser.add_argument(
-        "--dry-run", action="store_true", help="Do not write changes to files."
+        help="Bump version (legacy flat mode).",
     )
 
     args = parser.parse_args()
 
     current = get_current_version()
-    if not current:
-        print("Error: Could not retrieve current version.", file=sys.stderr)
-        sys.exit(1)
 
+    if args.command == "bump":
+        override_val = args.override if args.override and args.override.strip() else None
+        new_v = calculate_version(args.type, args.level, override=override_val)
+        write_version(new_v)
+        print(new_v)
+        return
+
+    # Legacy flat mode
     if args.get:
         print(current)
-        sys.exit(0)
-
-    try:
-        parsed = parse_semver(current)
-    except ValueError as e:
-        print(e, file=sys.stderr)
-        sys.exit(1)
+        return
 
     if args.set:
-        new_version = args.set
-    else:
-        parsed = bump_version(parsed, args.bump)
-        if args.build_metadata:
-            parsed["build"] = args.build_metadata
-        new_version = stringify_semver(parsed)
+        write_version(args.set)
+        return
 
-    update_files(new_version, args.dry_run)
+    if args.bump:
+        type_map = {
+            "major": ("stable", "major"),
+            "minor": ("stable", "minor"),
+            "patch": ("stable", "patch"),
+            "beta": ("beta", "patch"),
+            "dev": ("dev", "patch"),
+        }
+        rtype, level = type_map[args.bump]
+        new_v = calculate_version(rtype, level, curr=current)
+        write_version(new_v)
+        print(new_v)
+        return
+
+    parser.print_help()
 
 
 if __name__ == "__main__":

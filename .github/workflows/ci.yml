@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   lint-and-validate:
     name: Code Quality & Checks
@@ -28,16 +31,19 @@ jobs:
 
       - name: Check JSON Validity
         run: |
-          for f in $(find . -name "*.json"); do
-            echo "Checking JSON format for $f..."
-            jq . "$f" > /dev/null
-          done
+          python -c "import json, glob; [json.load(open(f, encoding='utf-8-sig')) for f in glob.glob('**/*.json', recursive=True) if '.git' not in f]"
 
-      - name: Lint Python with Ruff
-        run: ruff check scripts/ tests/
+      - name: Auto-fix and format with Ruff
+        run: |
+          ruff check --fix scripts/ tests/
+          ruff format scripts/ tests/
 
-      - name: Check Python Code Formatting (Ruff)
-        run: ruff format --check scripts/ tests/
+      - name: Commit auto-fixes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-fix and format with Ruff [skip ci]"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
 
       - name: Install Cppcheck
         run: sudo apt-get update && sudo apt-get install -y cppcheck

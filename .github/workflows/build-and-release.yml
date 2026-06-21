@@ -3,22 +3,51 @@ name: Build and Release PWA to Switch
 on:
   workflow_dispatch:
     inputs:
-      app_name:
-        description: 'App Name (e.g., Home Assistant)'
+      release_type:
+        description: "Type of release (stable, beta, nightly)"
         required: true
-        default: 'Universal App'
-      website_url:
-        description: 'Website or PWA URL (use "universal" for software keyboard entry)'
+        default: "beta"
+        type: choice
+        options:
+          - stable
+          - beta
+          - nightly
+
+      bump_level:
+        description: "Bump Level (SemVer only: major, minor, patch)"
+        required: false
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+      version_override:
+        description: "Manually override new version (e.g. 1.2.3 or 1.0.0b1). Leave empty to use automatic calculation."
+        required: false
+        type: string
+
+      app_selection:
+        description: 'PWA Target to build: Select a configured app, multiple separated by comma, "all", or "new" to add a new PWA.'
         required: true
-        default: 'universal'
-      icon_url:
-        description: 'Icon URL (Optional, fallback if PWA manifest lacks icon)'
+        default: 'all'
+        type: string
+
+      new_app_name:
+        description: 'New App Name (Only used if app_selection is "new")'
         required: false
         default: ''
-      allow_re_release:
-        description: 'Allow re-release/overwrite of tag?'
-        type: boolean
-        default: false
+
+      new_app_url:
+        description: 'New Website/PWA URL (Only used if app_selection is "new")'
+        required: false
+        default: ''
+
+      new_app_icon:
+        description: 'New App Icon URL (Optional, only used if app_selection is "new")'
+        required: false
+        default: ''
   push:
     tags:
       - 'v*'
@@ -88,23 +117,48 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      new_app_added: ${{ steps.set-matrix.outputs.new_app_added }}
     steps:
-      - id: set-matrix
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Resolve app matrix from supported_apps.json
+        id: set-matrix
+        shell: bash
         run: |
+          APP_SEL="${{ github.event.inputs.app_selection }}"
+          NEW_NAME="${{ github.event.inputs.new_app_name }}"
+          NEW_URL="${{ github.event.inputs.new_app_url }}"
+          NEW_ICON="${{ github.event.inputs.new_app_icon }}"
+
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            JSON="{\"include\":[{\"name\":\"${{ github.event.inputs.app_name }}\",\"url\":\"${{ github.event.inputs.website_url }}\",\"icon\":\"${{ github.event.inputs.icon_url }}\"}]}"
+            if [ "$APP_SEL" = "new" ]; then
+              # Register new app and build only it
+              MATRIX=$(python3 scripts/build_matrix_generator.py "new" "$NEW_NAME" "$NEW_URL" "$NEW_ICON")
+              echo "new_app_added=true" >> $GITHUB_OUTPUT
+            else
+              MATRIX=$(python3 scripts/build_matrix_generator.py "$APP_SEL")
+              echo "new_app_added=false" >> $GITHUB_OUTPUT
+            fi
           else
-            JSON='{"include":[
-              {"name":"Telegram","url":"https://web.telegram.org/a/","icon":""},
-              {"name":"Disney Plus","url":"https://www.disneyplus.com","icon":""},
-              {"name":"Home Assistant","url":"https://www.home-assistant.io","icon":""},
-              {"name":"Spotify","url":"https://open.spotify.com","icon":""},
-              {"name":"SoundCloud","url":"https://soundcloud.com","icon":""},
-              {"name":"YT Music","url":"https://music.youtube.com","icon":""},
-              {"name":"Universal App","url":"universal","icon":""}
-            ]}'
+            # Tag push: always build all apps from supported_apps.json
+            MATRIX=$(python3 scripts/build_matrix_generator.py "all")
+            echo "new_app_added=false" >> $GITHUB_OUTPUT
           fi
-          echo "matrix=${JSON}" >> $GITHUB_OUTPUT
+
+          echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
+
+      - name: Upload updated supported_apps.json
+        if: steps.set-matrix.outputs.new_app_added == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: updated-supported-apps
+          path: supported_apps.json
 
   build:
     name: Build Wrapper (${{ matrix.name }})
@@ -177,6 +231,7 @@ jobs:
           path: |
             *_Switch.zip
             *.nro
+          if-no-files-found: error
 
   release:
     name: Create Tagged Release
@@ -189,47 +244,61 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
       - name: Download all build artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
           merge-multiple: true
 
-      - name: Determine Tag and Version
+      - name: Calculate Version
         id: meta
+        shell: bash
         run: |
+          RTYPE="${{ github.event.inputs.release_type || 'stable' }}"
+          LEVEL="${{ github.event.inputs.bump_level || 'patch' }}"
+          OVERRIDE="${{ github.event.inputs.version_override || '' }}"
+
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="manual-${{ github.run_number }}"
-            TITLE="Manual Run Build v${{ github.run_number }}"
+            NEW_VER=$(python3 scripts/version_manager.py bump --type "$RTYPE" --level "$LEVEL" --override "$OVERRIDE")
+            TAG="v${NEW_VER}"
+            IS_PRE="$( [ "$RTYPE" = 'stable' ] && echo 'false' || echo 'true' )"
           else
             TAG="${{ github.ref_name }}"
-            TITLE="Release ${{ github.ref_name }}"
+            NEW_VER="${TAG#v}"
+            IS_PRE="false"
           fi
+
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
-          echo "title=${TITLE}" >> $GITHUB_OUTPUT
+          echo "version=${NEW_VER}" >> $GITHUB_OUTPUT
+          echo "is_prerelease=${IS_PRE}" >> $GITHUB_OUTPUT
+          echo "title=Release ${TAG}" >> $GITHUB_OUTPUT
 
       - name: Generate Advanced Changelog
-        id: changelog
+        shell: bash
         run: |
           echo "## Release Details" > body.md
           echo "- **Triggered by:** ${{ github.actor }}" >> body.md
+          echo "- **Version:** ${{ steps.meta.outputs.tag }}" >> body.md
           echo "- **Commit SHA:** ${{ github.sha }}" >> body.md
           echo "- **Date:** $(date -u)" >> body.md
           echo "" >> body.md
           echo "### 📦 Bundled Packages" >> body.md
           echo "Extract the matching \`*_Switch.zip\` file directly into your SD card root (or place the \`.nro\` in your \`/switch/pwa2nx/\` directory)." >> body.md
           echo "" >> body.md
-          
-          # Run python advanced changelog script
           python3 scripts/generate_changelog.py >> body.md
 
-      - name: Overwrite / Delete Existing Tag if Re-Release
-        if: github.event.inputs.allow_re_release == 'true'
+      - name: Overwrite / Delete Existing Tag
+        if: github.event.inputs.version_override != ''
         shell: bash
         run: |
           TAG="${{ steps.meta.outputs.tag }}"
-          gh release delete "${TAG}" --yes || true
-          git push --delete origin "${TAG}" || true
+          gh release delete "${TAG}" --yes 2>/dev/null || true
+          git push --delete origin "${TAG}" 2>/dev/null || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -243,24 +312,42 @@ jobs:
           name: ${{ steps.meta.outputs.title }}
           tag_name: ${{ steps.meta.outputs.tag }}
           body_path: body.md
+          prerelease: ${{ steps.meta.outputs.is_prerelease == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Post-Release Dev Version Bump
-        if: success() && github.event_name != 'workflow_dispatch'
+      - name: Commit New App + Post-Release Version Bump
+        if: success()
         shell: bash
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
-          # Update template placeholders for the released version
+          git reset --hard HEAD
+          git pull --rebase origin ${{ github.ref_name }}
+
+          CHANGED_FILES=""
+
+          # Commit newly added PWA to supported_apps.json if applicable
+          if [ "${{ needs.prep.outputs.new_app_added }}" = "true" ]; then
+            # Restore the updated supported_apps.json from artifact
+            mv artifacts/supported_apps.json supported_apps.json 2>/dev/null || true
+            if ! git diff --quiet supported_apps.json 2>/dev/null; then
+              CHANGED_FILES="$CHANGED_FILES supported_apps.json"
+            fi
+          fi
+
+          # Bump dev version and update issue template placeholders
           RELEASE_TAG="${{ steps.meta.outputs.tag }}"
           python3 scripts/update_templates.py "${RELEASE_TAG#v}"
-          
-          python3 scripts/version_manager.py --bump dev
-          git add Makefile app.json .github/ISSUE_TEMPLATE/bug_report.yml
-          git commit -m "chore: bump version to development cycle & update template placeholders [skip ci]"
-          git push origin HEAD:${{ github.ref_name }}
+          python3 scripts/version_manager.py bump --type dev --level patch
+          CHANGED_FILES="$CHANGED_FILES Makefile app.json .github/ISSUE_TEMPLATE/bug_report.yml"
+
+          git add $CHANGED_FILES
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: post-release bump & template update [skip ci]"
+            git push origin HEAD:${{ github.ref_name }} || \
+              (git pull --rebase origin ${{ github.ref_name }} && git push origin HEAD:${{ github.ref_name }})
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -12,43 +12,27 @@ import generate_changelog
 
 
 class TestVersionManager(unittest.TestCase):
-    def test_parse_semver(self) -> None:
-        res = version_manager.parse_semver("1.2.3")
-        self.assertEqual(res["major"], 1)
-        self.assertEqual(res["minor"], 2)
-        self.assertEqual(res["patch"], 3)
-        self.assertEqual(res["prerelease"], "")
+    def test_calculate_version_stable(self) -> None:
+        self.assertEqual(version_manager.calculate_version("stable", "patch", curr="1.0.0"), "1.0.1")
+        self.assertEqual(version_manager.calculate_version("stable", "minor", curr="1.0.0"), "1.1.0")
+        self.assertEqual(version_manager.calculate_version("stable", "major", curr="1.0.0"), "2.0.0")
+        # Promoting a beta to stable
+        self.assertEqual(version_manager.calculate_version("stable", "patch", curr="1.0.1b0"), "1.0.1")
 
-        res = version_manager.parse_semver("2.0.1-beta.4+build123")
-        self.assertEqual(res["major"], 2)
-        self.assertEqual(res["minor"], 0)
-        self.assertEqual(res["patch"], 1)
-        self.assertEqual(res["prerelease"], "beta.4")
-        self.assertEqual(res["build"], "build123")
+    def test_calculate_version_beta(self) -> None:
+        self.assertEqual(version_manager.calculate_version("beta", "patch", curr="1.0.0"), "1.0.1b0")
+        self.assertEqual(version_manager.calculate_version("beta", "minor", curr="1.0.0"), "1.1.0b0")
+        self.assertEqual(version_manager.calculate_version("beta", "major", curr="1.0.0"), "2.0.0b0")
+        # Incrementing an existing beta
+        self.assertEqual(version_manager.calculate_version("beta", "patch", curr="1.0.1b0"), "1.0.1b1")
 
-    def test_bump_version(self) -> None:
-        parsed = version_manager.parse_semver("1.0.0")
+    def test_calculate_version_dev(self) -> None:
+        self.assertEqual(version_manager.calculate_version("dev", "patch", curr="1.0.0"), "1.0.1-dev0")
+        self.assertEqual(version_manager.calculate_version("dev", "patch", curr="1.0.1-dev0"), "1.0.1-dev1")
 
-        # Patch
-        bumped = version_manager.bump_version(parsed.copy(), "patch")
-        self.assertEqual(version_manager.stringify_semver(bumped), "1.0.1")
-
-        # Minor
-        bumped = version_manager.bump_version(parsed.copy(), "minor")
-        self.assertEqual(version_manager.stringify_semver(bumped), "1.1.0")
-
-        # Major
-        bumped = version_manager.bump_version(parsed.copy(), "major")
-        self.assertEqual(version_manager.stringify_semver(bumped), "2.0.0")
-
-        # Beta
-        bumped = version_manager.bump_version(parsed.copy(), "beta")
-        self.assertEqual(version_manager.stringify_semver(bumped), "1.0.1-beta.0")
-
-        # Beta increment
-        parsed_beta = version_manager.parse_semver("1.0.1-beta.0")
-        bumped_beta = version_manager.bump_version(parsed_beta.copy(), "beta")
-        self.assertEqual(version_manager.stringify_semver(bumped_beta), "1.0.1-beta.1")
+    def test_calculate_version_override(self) -> None:
+        self.assertEqual(version_manager.calculate_version("stable", "patch", curr="1.0.0", override="2.5.3"), "2.5.3")
+        self.assertEqual(version_manager.calculate_version("stable", "patch", curr="1.0.0", override="v3.0.0"), "3.0.0")
 
 
 class TestGenerateChangelog(unittest.TestCase):
