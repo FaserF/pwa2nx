@@ -23,16 +23,22 @@ def get_current_version() -> str:
             match = re.match(r"^v?(\d+)\.(\d+)\.(\d+)(?:(b)(\d+)|(-dev)(\d+))?$", tag)
             if match:
                 y, m, p, bp, bn, dp, dn = match.groups()
-                v_tags.append({
-                    "tag": tag,
-                    "key": (
-                        int(y), int(m), int(p),
-                        (1 if bp else (0 if dp else 2)),
-                        (int(bn) if bp else (int(dn) if dp else 0)),
-                    ),
-                })
+                v_tags.append(
+                    {
+                        "tag": tag,
+                        "key": (
+                            int(y),
+                            int(m),
+                            int(p),
+                            (1 if bp else (0 if dp else 2)),
+                            (int(bn) if bp else (int(dn) if dp else 0)),
+                        ),
+                    }
+                )
         if v_tags:
-            return sorted(v_tags, key=lambda x: x["key"], reverse=True)[0]["tag"].lstrip("v")
+            return sorted(v_tags, key=lambda x: x["key"], reverse=True)[0][
+                "tag"
+            ].lstrip("v")
     except subprocess.CalledProcessError:
         pass
 
@@ -119,7 +125,9 @@ def write_version(new_version: str) -> None:
         if count > 0:
             with open(MAKEFILE_PATH, "w", encoding="utf-8") as f:
                 f.write(updated)
-            print(f"Updated {MAKEFILE_PATH} APP_VERSION → {new_version}", file=sys.stderr)
+            print(
+                f"Updated {MAKEFILE_PATH} APP_VERSION → {new_version}", file=sys.stderr
+            )
     except FileNotFoundError:
         pass
 
@@ -142,8 +150,12 @@ def main() -> None:
 
     # ha-openwrt-style subcommand: scripts/version_manager.py bump --type stable --level patch
     bump_parser = subparsers.add_parser("bump")
-    bump_parser.add_argument("--type", choices=["stable", "beta", "dev", "nightly"], required=True)
-    bump_parser.add_argument("--level", choices=["major", "minor", "patch"], default="patch")
+    bump_parser.add_argument(
+        "--type", choices=["stable", "beta", "dev", "nightly"], required=True
+    )
+    bump_parser.add_argument(
+        "--level", choices=["major", "minor", "patch"], default="patch"
+    )
     bump_parser.add_argument("--override", default=None)
 
     # Legacy flat flags kept for backward compat
@@ -160,7 +172,9 @@ def main() -> None:
     current = get_current_version()
 
     if args.command == "bump":
-        override_val = args.override if args.override and args.override.strip() else None
+        override_val = (
+            args.override if args.override and args.override.strip() else None
+        )
         new_v = calculate_version(args.type, args.level, override=override_val)
         write_version(new_v)
         print(new_v)
