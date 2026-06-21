@@ -250,7 +250,7 @@ jobs:
           python-version: '3.14'
 
       - name: Download all build artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
