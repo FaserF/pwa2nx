@@ -66,7 +66,6 @@ You don't need to install devkitPro locally. The entire build pipeline is offloa
 │       ├── build-and-release.yml   # GHA compilation pipeline
 │       ├── ci.yml                  # Code quality linter & unit test validation
 │       ├── labeler.yml             # Automatic PR label applier
-│       ├── auto-reply.yml          # Welcome message & disclaimer poster
 │       └── rollback.yml            # Rollback release tag workflow
 ├── docs/
 │   └── architecture.md             # Contributor architecture overview

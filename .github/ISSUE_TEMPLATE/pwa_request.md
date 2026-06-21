@@ -17,3 +17,9 @@ assignees: ''
 
 ## Context
 Provide any specific configurations needed (e.g. requires user-agent spoofing, specific cookies, or keyboard interaction overrides).
+
+---
+
+> [!IMPORTANT]
+> **Disclaimer:** This project is an unofficial wrapper wrapper and is in no way affiliated, associated, authorized, endorsed by, or in any way officially connected with the creators or operators of the supported PWA platforms (e.g. Disney+, Telegram, Home Assistant, Spotify, SoundCloud, YouTube Music, etc.). All product names, logos, and brands are property of their respective owners.
+

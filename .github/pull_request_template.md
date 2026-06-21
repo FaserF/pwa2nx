@@ -18,3 +18,9 @@ Describe the tests/checks you ran to verify your changes:
 - [ ] I have performed a self-review of my own code.
 - [ ] Any modifications are fully compatible with devkitPro & libnx.
 - [ ] Cleanups and automated releases have been verified.
+
+---
+
+> [!IMPORTANT]
+> **Disclaimer:** This project is an unofficial wrapper wrapper and is in no way affiliated, associated, authorized, endorsed by, or in any way officially connected with the creators or operators of the supported PWA platforms (e.g. Disney+, Telegram, Home Assistant, Spotify, SoundCloud, YouTube Music, etc.). All product names, logos, and brands are property of their respective owners.
+
