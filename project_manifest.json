@@ -29,6 +29,9 @@
     ".github/workflows/auto-reply.yml": "Welcome greeting and manufacturer disclaimer auto-poster for issues and PRs",
     ".github/labeler.yml": "Path-to-label mapping file",
     ".gitignore": "Standard exclusion file for build products, cache, and IDE configs",
-    "LICENSE": "MIT Open Source License details"
+    "LICENSE": "MIT Open Source License details",
+    "renovate.json": "Renovate dependency tracking configuration",
+    "requirements.txt": "Core Python execution dependencies package file",
+    "requirements-dev.txt": "Development and quality checking Python dependencies package file"
   }
 }

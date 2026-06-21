@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Auto-reply to Issue
         if: github.event_name == 'issues'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.createComment({
@@ -34,7 +34,7 @@ jobs:
 
       - name: Auto-reply to Pull Request
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.createComment({

@@ -43,7 +43,8 @@
       "backend": {
         "services": [
           ".github/workflows/ci.yml",
-          "tests/test_automation.py"
+          "tests/test_automation.py",
+          "requirements-dev.txt"
         ]
       }
     },
@@ -54,6 +55,16 @@
           ".github/workflows/labeler.yml",
           ".github/workflows/auto-reply.yml",
           ".github/labeler.yml"
+        ]
+      }
+    },
+    "dependency_management": {
+      "description": "Renovate automatic dependency tracking configuration and pip dependency manifests.",
+      "backend": {
+        "services": [
+          "renovate.json",
+          "requirements.txt",
+          "requirements-dev.txt"
         ]
       }
     }
