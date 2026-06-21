@@ -1,0 +1,27 @@
+# GitHub Labeler Configuration for pwa2nx
+
+source-code:
+  - changed-files:
+    - any-glob-to-any-file: 'source/**/*'
+
+scripts:
+  - changed-files:
+    - any-glob-to-any-file: 'scripts/**/*'
+
+ci-cd:
+  - changed-files:
+    - any-glob-to-any-file: '.github/**/*'
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file: '/**/*.md'
+    - any-glob-to-any-file: 'LICENSE'
+
+tests:
+  - changed-files:
+    - any-glob-to-any-file: 'tests/**/*'
+
+metadata:
+  - changed-files:
+    - any-glob-to-any-file: 'app.json'
+    - any-glob-to-any-file: 'Makefile'

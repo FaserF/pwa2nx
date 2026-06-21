@@ -1,0 +1,270 @@
+name: Build and Release PWA to Switch
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_name:
+        description: 'App Name (e.g., Home Assistant)'
+        required: true
+        default: 'Universal App'
+      website_url:
+        description: 'Website or PWA URL (use "universal" for software keyboard entry)'
+        required: true
+        default: 'universal'
+      icon_url:
+        description: 'Icon URL (Optional, fallback if PWA manifest lacks icon)'
+        required: false
+        default: ''
+      allow_re_release:
+        description: 'Allow re-release/overwrite of tag?'
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  preflight:
+    name: Preflight & Safety Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-python: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install Pillow requests
+
+      - name: Run Preflight Checks
+        run: python scripts/preflight.py
+        env:
+          ALLOW_RE_RELEASE: ${{ github.event.inputs.allow_re_release }}
+
+  risk-analysis:
+    name: Codebase Risk & Impact Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Analyze Git Diff
+        shell: bash
+        run: |
+          git diff --stat HEAD~1 HEAD > diff.txt || echo "First commit or dispatch" > diff.txt
+          cat diff.txt
+          
+          # Calculate changes in areas
+          C_CHANGES=$(grep -c "source/" diff.txt || true)
+          SCRIPT_CHANGES=$(grep -c "scripts/" diff.txt || true)
+          TOTAL_CHANGES=$(wc -l < diff.txt || echo 0)
+          
+          echo "### 📊 Codebase Impact Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **C/C++ Source files modified:** $C_CHANGES" >> $GITHUB_STEP_SUMMARY
+          echo "- **Scripts files modified:** $SCRIPT_CHANGES" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total files affected:** $TOTAL_CHANGES" >> $GITHUB_STEP_SUMMARY
+          
+          if grep -q "psel" diff.txt || grep -q "main.c" diff.txt; then
+            echo "> [!WARNING]" >> $GITHUB_STEP_SUMMARY
+            echo "> **High Risk Change:** System applets, profile selector, or main initialization paths modified." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "> [!NOTE]" >> $GITHUB_STEP_SUMMARY
+            echo "> Standard non-breaking release checks." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  prep:
+    name: Prepare App Matrix
+    needs: [preflight, risk-analysis]
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps:set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            JSON="{\"include\":[{\"name\":\"${{ github.event.inputs.app_name }}\",\"url\":\"${{ github.event.inputs.website_url }}\",\"icon\":\"${{ github.event.inputs.icon_url }}\"}]}"
+          else
+            JSON='{"include":[
+              {"name":"Telegram","url":"https://web.telegram.org/a/","icon":""},
+              {"name":"Disney Plus","url":"https://www.disneyplus.com","icon":""},
+              {"name":"Home Assistant","url":"https://www.home-assistant.io","icon":""},
+              {"name":"Spotify","url":"https://open.spotify.com","icon":""},
+              {"name":"SoundCloud","url":"https://soundcloud.com","icon":""},
+              {"name":"YT Music","url":"https://music.youtube.com","icon":""},
+              {"name":"Universal App","url":"universal","icon":""}
+            ]}'
+          fi
+          echo "matrix=${JSON}" >> $GITHUB_OUTPUT
+
+  build:
+    name: Build Wrapper (${{ matrix.name }})
+    needs: prep
+    runs-on: ubuntu-latest
+    container: devkitpro/devkita64:latest
+    strategy:
+      fail-fast: false
+      matrix: ${{fromJson(needs.prep.outputs.matrix)}}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache APT packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-apt-cache
+
+      - name: Install dependencies
+        run: |
+          apt-get update && apt-get install -y python3-pip python3-pillow python3-requests curl jq zip
+          
+      - name: Extract PWA details and generate assets
+        shell: bash
+        run: |
+          python3 scripts/extract_pwa.py \
+            --url "${{ matrix.url }}" \
+            --name "${{ matrix.name }}" \
+            --icon "${{ matrix.icon }}" \
+            --output-icon source/icon.png \
+            --output-hdr source/config.h
+
+      - name: Update Makefile App Metadata
+        shell: bash
+        run: |
+          sed -i 's/^APP_TITLE\t:=.*/APP_TITLE\t:=\t"${{ matrix.name }}"/g' Makefile
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            VERSION_NAME="${{ github.ref_name }}"
+            sed -i "s/^APP_VERSION\t:=.*/APP_VERSION\t:=\t${VERSION_NAME#v}/g" Makefile
+          else
+            sed -i "s/^APP_VERSION\t:=.*/APP_VERSION\t:=\t1.0.0-${{ github.run_number }}/g" Makefile
+          fi
+
+      - name: Build NRO
+        run: |
+          make clean && make -j$(nproc)
+
+      - name: Create Release Artifacts
+        shell: bash
+        run: |
+          SAFE_NAME=$(echo "${{ matrix.name }}" | sed 's/[^a-zA-Z0-9]/_/g')
+          mkdir -p release/switch/pwa2nx
+          cp pwa2nx.nro release/switch/pwa2nx/${SAFE_NAME}.nro
+          
+          # Populate app.json dynamic config
+          jq --arg n "${{ matrix.name }}" --arg v "${{ github.run_number }}" '.name = $n | .version = $v' app.json > release/switch/pwa2nx/app.json
+          cp source/icon.png release/switch/pwa2nx/icon.png
+          
+          # Compress for Homebrew App Store direct-extract root
+          cd release && zip -r ../${SAFE_NAME}_Switch.zip switch/ && cd ..
+          cp pwa2nx.nro ${SAFE_NAME}.nro
+
+      - name: Upload Artifacts for Release Job
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-assets-${{ matrix.name }}
+          path: |
+            *_Switch.zip
+            *.nro
+
+  release:
+    name: Create Tagged Release
+    needs: [prep, build]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Determine Tag and Version
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="manual-${{ github.run_number }}"
+            TITLE="Manual Run Build v${{ github.run_number }}"
+          else
+            TAG="${{ github.ref_name }}"
+            TITLE="Release ${{ github.ref_name }}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "title=${TITLE}" >> $GITHUB_OUTPUT
+
+      - name: Generate Advanced Changelog
+        id: changelog
+        run: |
+          echo "## Release Details" > body.md
+          echo "- **Triggered by:** ${{ github.actor }}" >> body.md
+          echo "- **Commit SHA:** ${{ github.sha }}" >> body.md
+          echo "- **Date:** $(date -u)" >> body.md
+          echo "" >> body.md
+          echo "### 📦 Bundled Packages" >> body.md
+          echo "Extract the matching \`*_Switch.zip\` file directly into your SD card root (or place the \`.nro\` in your \`/switch/pwa2nx/\` directory)." >> body.md
+          echo "" >> body.md
+          
+          # Run python advanced changelog script
+          python3 scripts/generate_changelog.py >> body.md
+
+      - name: Overwrite / Delete Existing Tag if Re-Release
+        if: github.event.inputs.allow_re_release == 'true'
+        shell: bash
+        run: |
+          TAG="${{ steps:meta.outputs.tag }}"
+          gh release delete "${TAG}" --yes || true
+          git push --delete origin "${TAG}" || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish GitHub Release
+        id: publish_release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/*_Switch.zip
+            artifacts/*.nro
+          name: ${{ steps:meta.outputs.title }}
+          tag_name: ${{ steps:meta.outputs.tag }}
+          body_path: body.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Post-Release Dev Version Bump
+        if: success() && github.event_name != 'workflow_dispatch'
+        shell: bash
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python3 scripts/version_manager.py --bump dev
+          git add Makefile app.json
+          git commit -m "chore: bump version to development cycle [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup On Failure
+        if: failure()
+        shell: bash
+        run: |
+          TAG="${{ steps:meta.outputs.tag }}"
+          echo "Build failed. Rolling back created tag/draft if any..."
+          gh release delete "${TAG}" --yes || true
+          git push --delete origin "${TAG}" || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

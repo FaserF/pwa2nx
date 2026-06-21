@@ -1,0 +1,61 @@
+{
+  "features": {
+    "pwa_extraction": {
+      "description": "Extracts PWA details (short name, icons) from target URL to configure compiling of Nintendo Switch wrapper.",
+      "backend": {
+        "services": ["scripts/extract_pwa.py"]
+      }
+    },
+    "profile_selector": {
+      "description": "Invokes Nintendo Switch User Selector applet to select user account profile for persistent data.",
+      "backend": {
+        "services": ["source/main.c"]
+      }
+    },
+    "web_applet_launch": {
+      "description": "Creates and starts NetFront NX WebKit applet loading configured target URL with associated account UID cookie storage.",
+      "backend": {
+        "services": ["source/main.c", "source/config.h"]
+      }
+    },
+    "github_ota_update": {
+      "description": "Queries GitHub Release API on start, compares release versions, downloads and saves latest NRO asset dynamically onto SD card.",
+      "backend": {
+        "services": ["source/main.c", "source/updater.c", "source/updater.h"]
+      }
+    },
+    "ci_cd_build_release": {
+      "description": "Automated workflow compile pipeline generating localized NRO application bundle and posting a release tag on GitHub.",
+      "backend": {
+        "services": [
+          ".github/workflows/build-and-release.yml", 
+          ".github/workflows/rollback.yml", 
+          "Makefile", 
+          "app.json", 
+          "scripts/preflight.py", 
+          "scripts/generate_changelog.py", 
+          "scripts/version_manager.py"
+        ]
+      }
+    },
+    "ci_validation_linting": {
+      "description": "Automatic linting (Ruff, cppcheck) and unit testing (pytest) pipeline triggered on push/pull requests.",
+      "backend": {
+        "services": [
+          ".github/workflows/ci.yml",
+          "tests/test_automation.py"
+        ]
+      }
+    },
+    "governance_and_labeling": {
+      "description": "Automatic welcome remarks, manufacturer disclaimers, and file-path labeling configurations for PRs/Issues.",
+      "backend": {
+        "services": [
+          ".github/workflows/labeler.yml",
+          ".github/workflows/auto-reply.yml",
+          ".github/labeler.yml"
+        ]
+      }
+    }
+  }
+}

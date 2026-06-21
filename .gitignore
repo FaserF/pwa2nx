@@ -1,0 +1,33 @@
+# devkitPro / libnx Build Outputs
+build/
+*.map
+*.elf
+*.nacp
+*.nro
+*.nsp
+release/
+*_Switch.zip
+
+# Python & Lint Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# IDEs & System Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Scratch and Temporary directories
+scratch/
+temp/
+*.tmp
+diff.txt
+body.md

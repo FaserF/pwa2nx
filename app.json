@@ -1,0 +1,10 @@
+{
+  "name": "pwa2nx",
+  "author": "fabian-seitz",
+  "version": "1.0.0",
+  "category": "utility",
+  "description": "Universal PWA and Website wrapper for Nintendo Switch with session persistence and self-updates.",
+  "detailed_description": "Convert Progressive Web Apps (PWAs) and standard websites into native wrappers on the Nintendo Switch utilizing the internal NetFront NX WebKit applet. Supports profile-associated save data for complete session, login, and cookie persistence.",
+  "license": "MIT",
+  "repository": "https://github.com/fabian-seitz/pwa2nx"
+}
