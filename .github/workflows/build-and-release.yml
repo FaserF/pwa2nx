@@ -252,6 +252,7 @@ jobs:
           cp pwa2nx.nro ${SAFE_NAME}.nro
           export PATH="/opt/devkitpro/devkitA64/bin:/opt/devkitpro/tools/bin:$PATH"
           python3 scripts/build_nsp.py "${{ matrix.name }}" "${SAFE_NAME}"
+          rm pwa2nx.nro
 
       - name: Upload Artifacts for Release Job
         uses: actions/upload-artifact@v7
