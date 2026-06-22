@@ -7,7 +7,7 @@
 [![Build and Release PWA to Switch](https://github.com/FaserF/pwa2nx/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/FaserF/pwa2nx/actions/workflows/build-and-release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**pwa2nx** is a highly automated, universal web-to-Switch translator that packages Progressive Web Apps (PWAs) and standard websites into ready-to-install Nintendo Switch homebrew applications (`.nro` / Appstore `.zip`).
+**pwa2nx** is a highly automated, universal web-to-Switch translator that packages Progressive Web Apps (PWAs) and standard websites into ready-to-install Nintendo Switch homebrew applications (`.nro` and `.nsp` forwarders).
 
 Built on top of `libnx` and utilizing the Switch's internal NetFront NX web applet, it bridges the gap between web experiences and homebrew, offering profile-backed session persistence, a built-in OTA self-updater, and automated matrix builds via GitHub Actions.
 
@@ -48,7 +48,7 @@ You don't need to install devkitPro locally. The entire build pipeline is offloa
    - **App Name:** The name of your application (e.g., `Home Assistant`).
    - **Website URL:** The URL of the website or PWA (e.g., `https://my-home-assistant.duckdns.org` or use `universal` to prompt on launch).
    - **Icon URL (Optional):** Fallback URL for the icon if the website isn't a PWA or you want a custom image.
-5. Retrieve your compiled `.nro` and Homebrew Appstore package from the generated **GitHub Release**.
+5. Retrieve your compiled `.nro` (Homebrew Launcher format) and `.nsp` (directly installable to Switch Home Screen) from the generated **GitHub Release** (NSP builds require adding the `PROD_KEYS` secret to your GitHub repository Secrets).
 
 ---
 
