@@ -62,7 +62,7 @@ def check_icon() -> bool:
     if not os.path.exists(icon_path):
         print(f"[-] Error: Icon file does not exist at {icon_path}")
         return False
- 
+
     try:
         with Image.open(icon_path) as img:
             width, height = img.size
@@ -72,12 +72,14 @@ def check_icon() -> bool:
                 )
                 return False
             if img.format not in ("JPEG", "MPO"):
-                print(f"[-] Error: Icon must be in JPEG format, but found {img.format}.")
+                print(
+                    f"[-] Error: Icon must be in JPEG format, but found {img.format}."
+                )
                 return False
     except Exception as e:
         print(f"[-] Error reading icon: {e}")
         return False
- 
+
     print("[+] Icon check passed.")
     return True
 

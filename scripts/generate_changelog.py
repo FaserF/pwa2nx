@@ -115,7 +115,13 @@ def is_noise(subject: str, author_name: str) -> bool:
 
 
 def get_primary_maintainers() -> set[str]:
-    maintainers = {"faserf", "faser", "fabian-seitz", "fabian seitz", "fseitz"}  # safety fallbacks
+    maintainers = {
+        "faserf",
+        "faser",
+        "fabian-seitz",
+        "fabian seitz",
+        "fseitz",
+    }  # safety fallbacks
     # Try reading from app.json
     try:
         if os.path.exists("app.json"):
@@ -231,8 +237,6 @@ def generate_changelog(
         else:
             md_output.extend(entries)
             md_output.append("")
-
-
 
     if not md_output:
         md_output.append("No user-facing changes since last release.")

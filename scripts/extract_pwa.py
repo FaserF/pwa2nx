@@ -26,7 +26,13 @@ def parse_args() -> argparse.Namespace:
 
 def fetch_manifest_url(url: str) -> str | None:
     try:
-        r = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"})
+        r = requests.get(
+            url,
+            timeout=10,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            },
+        )
         if r.status_code != 200:
             return None
         soup = BeautifulSoup(r.text, "html.parser")
@@ -51,7 +57,9 @@ def download_and_resize_icon(icon_url: str, dest_path: str) -> bool:
 
             # Resize to 256x256 JPEG
             with Image.open(dest_path + ".tmp") as img:
-                if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+                if img.mode in ("RGBA", "LA") or (
+                    img.mode == "P" and "transparency" in img.info
+                ):
                     img = img.convert("RGB")
                 resized_img = img.resize((256, 256), Image.Resampling.LANCZOS)
                 resized_img.save(dest_path, "JPEG")
