@@ -13,25 +13,11 @@
     "source/updater.c": "GitHub Release OTA self-updater using libcurl",
     "source/updater.h": "Header for updater module",
     "source/config.h": "Auto-generated target URL and title configuration header",
-    "source/icon.png": "The 256x256 icon of the application packaged into the NRO",
+    "source/icon.jpg": "The 256x256 icon of the application packaged into the NRO",
     "scripts": "Helper python scripts for build-time operations",
     "scripts/extract_pwa.py": "Downloads PWA manifests, extracts/resizes icons, and writes C configuration headers",
-    "scripts/version_manager.py": "Manage semantic versioning across repository files",
-    "scripts/generate_changelog.py": "Deduplicate, filter, and categorize git logs into Markdown release notes",
-    "scripts/preflight.py": "Environment checks for make, icons, JSON configurations, and git tags",
-    "tests/test_automation.py": "Python unit tests validating release script automation logic",
     "Makefile": "devkitPro compiler makefile configuring flags, libnx libraries, and compilation tasks",
     "app.json": "Metadata structure for Homebrew App Store distribution compatibility",
-    ".github/workflows/build-and-release.yml": "CI/CD pipeline triggering automated PWA extraction, NRO compilation, and GitHub Release generation",
-    ".github/workflows/ci.yml": "CI workflow executing JSON validation, python ruff linting, cppcheck analysis, and unit tests",
-    ".github/workflows/rollback.yml": "Revert tag and release trigger workflow for fallback cleanup",
-    ".github/workflows/labeler.yml": "Automatic pull request labeling workflow based on file paths",
-    ".github/workflows/auto-reply.yml": "Welcome greeting and manufacturer disclaimer auto-poster for issues and PRs",
-    ".github/labeler.yml": "Path-to-label mapping file",
-    ".gitignore": "Standard exclusion file for build products, cache, and IDE configs",
-    "LICENSE": "MIT Open Source License details",
-    "renovate.json": "Renovate dependency tracking configuration",
-    "requirements.txt": "Core Python execution dependencies package file",
-    "requirements-dev.txt": "Development and quality checking Python dependencies package file"
+    ".github/workflows/build-and-release.yml": "CI/CD pipeline triggering automated PWA extraction, NRO compilation, and GitHub Release generation"
   }
 }

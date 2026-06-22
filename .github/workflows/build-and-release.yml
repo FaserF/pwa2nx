@@ -193,7 +193,7 @@ jobs:
             --url "${{ matrix.url }}" \
             --name "${{ matrix.name }}" \
             --icon "${{ matrix.icon }}" \
-            --output-icon source/icon.png \
+            --output-icon source/icon.jpg \
             --output-hdr source/config.h
 
       - name: Update Makefile App Metadata

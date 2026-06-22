@@ -14,7 +14,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--name", required=True, help="Fallback App Name")
     parser.add_argument("--icon", default="", help="Fallback Icon URL")
     parser.add_argument(
-        "--output-icon", default="source/icon.png", help="Output path for Switch icon"
+        "--output-icon", default="source/icon.jpg", help="Output path for Switch icon"
     )
     parser.add_argument(
         "--output-hdr",
@@ -26,7 +26,7 @@ def parse_args() -> argparse.Namespace:
 
 def fetch_manifest_url(url: str) -> str | None:
     try:
-        r = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0 PWA2NX"})
+        r = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"})
         if r.status_code != 200:
             return None
         soup = BeautifulSoup(r.text, "html.parser")
@@ -49,10 +49,12 @@ def download_and_resize_icon(icon_url: str, dest_path: str) -> bool:
                 for chunk in r.iter_content(chunk_size=128):
                     f.write(chunk)
 
-            # Resize to 256x256 PNG
+            # Resize to 256x256 JPEG
             with Image.open(dest_path + ".tmp") as img:
+                if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+                    img = img.convert("RGB")
                 resized_img = img.resize((256, 256), Image.Resampling.LANCZOS)
-                resized_img.save(dest_path, "PNG")
+                resized_img.save(dest_path, "JPEG")
             os.remove(dest_path + ".tmp")
             print(f"Successfully processed icon: {dest_path}")
             return True
@@ -63,8 +65,8 @@ def download_and_resize_icon(icon_url: str, dest_path: str) -> bool:
 
 def generate_default_icon(dest_path: str) -> None:
     # Generates a standard grid fallback icon
-    img = Image.new("RGBA", (256, 256), color=(44, 62, 80, 255))
-    img.save(dest_path, "PNG")
+    img = Image.new("RGB", (256, 256), color=(44, 62, 80))
+    img.save(dest_path, "JPEG")
     print(f"Generated placeholder icon at {dest_path}")
 
 

@@ -1,7 +1,7 @@
 # pwa2nx 🚀
 
 <p align="center">
-  <img src="source/icon.png" width="128" height="128" alt="pwa2nx Logo">
+  <img src="source/icon.jpg" width="128" height="128" alt="pwa2nx Logo">
 </p>
 
 [![Build and Release PWA to Switch](https://github.com/FaserF/pwa2nx/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/FaserF/pwa2nx/actions/workflows/build-and-release.yml)

@@ -20,7 +20,7 @@ def main() -> None:
         "source/updater.c": "GitHub Release OTA self-updater using libcurl",
         "source/updater.h": "Header for updater module",
         "source/config.h": "Auto-generated target URL and title configuration header",
-        "source/icon.png": "The 256x256 icon of the application packaged into the NRO",
+        "source/icon.jpg": "The 256x256 icon of the application packaged into the NRO",
         "scripts": "Helper python scripts for build-time operations",
         "scripts/extract_pwa.py": "Downloads PWA manifests, extracts/resizes icons, and writes C configuration headers",
         "Makefile": "devkitPro compiler makefile configuring flags, libnx libraries, and compilation tasks",

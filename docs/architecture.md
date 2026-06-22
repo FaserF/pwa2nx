@@ -9,7 +9,7 @@ This document details the architecture, design patterns, and homebrew internals 
 ```mermaid
 graph TD
     A[PWA Manifest / URL] -->|extract_pwa.py| B[source/config.h]
-    A -->|extract_pwa.py| C[source/icon.png]
+    A -->|extract_pwa.py| C[source/icon.jpg]
     B -->|devkitPro Compiler| D[pwa2nx.elf]
     C -->|elf2nro| E[pwa2nx.nro]
     D -->|elf2nro| E

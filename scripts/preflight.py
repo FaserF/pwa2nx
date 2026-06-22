@@ -57,12 +57,12 @@ def check_app_json() -> bool:
 
 
 def check_icon() -> bool:
-    print("Checking source/icon.png...")
-    icon_path = os.path.join("source", "icon.png")
+    print("Checking source/icon.jpg...")
+    icon_path = os.path.join("source", "icon.jpg")
     if not os.path.exists(icon_path):
         print(f"[-] Error: Icon file does not exist at {icon_path}")
         return False
-
+ 
     try:
         with Image.open(icon_path) as img:
             width, height = img.size
@@ -71,13 +71,13 @@ def check_icon() -> bool:
                     f"[-] Error: Icon size must be 256x256, but found {width}x{height}."
                 )
                 return False
-            if img.format != "PNG":
-                print(f"[-] Error: Icon must be in PNG format, but found {img.format}.")
+            if img.format not in ("JPEG", "MPO"):
+                print(f"[-] Error: Icon must be in JPEG format, but found {img.format}.")
                 return False
     except Exception as e:
         print(f"[-] Error reading icon: {e}")
         return False
-
+ 
     print("[+] Icon check passed.")
     return True
 

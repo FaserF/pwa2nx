@@ -77,7 +77,7 @@ all: $(NROFILE)
 
 $(NROFILE): $(ELFFILE) $(NACPFILE)
 	@echo Creating NRO...
-	@$(ELF2NRO) $< $@ --nacp=$(NACPFILE) --icon=$(SOURCES)/icon.png
+	@$(ELF2NRO) $< $@ --nacp=$(NACPFILE) --icon=$(SOURCES)/icon.jpg
 
 $(ELFFILE): $(OFILES)
 	@echo Linking ELF...
