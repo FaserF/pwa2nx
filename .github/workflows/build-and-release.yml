@@ -237,26 +237,21 @@ jobs:
           make clean && make -j$(nproc)
 
       - name: Setup NSP Build Tools
-        if: env.HAS_KEYS == 'true'
         run: |
-          pip3 install nton
           git clone --depth 1 https://github.com/The-4n/hacBrewPack.git
           cd hacBrewPack && make && cp hacbrewpack /usr/local/bin/ && cd ..
-          git clone --depth 1 https://github.com/reswitched/nstool.git
-          cd nstool && make && cp nstool /usr/local/bin/ && cd ..
-          mkdir -p ~/.switch
-          echo "${{ secrets.PROD_KEYS }}" > ~/.switch/prod.keys
-        env:
-          HAS_KEYS: ${{ secrets.PROD_KEYS != '' }}
+          if [ "${{ secrets.PROD_KEYS }}" != "" ]; then
+            mkdir -p ~/.switch
+            echo "${{ secrets.PROD_KEYS }}" > ~/.switch/prod.keys
+          fi
 
       - name: Create Release Artifacts
         shell: bash
         run: |
           SAFE_NAME=$(echo "${{ matrix.name }}" | sed 's/[^a-zA-Z0-9]/_/g')
           cp pwa2nx.nro ${SAFE_NAME}.nro
-          if [ -f ~/.switch/prod.keys ]; then
-            nton build "${SAFE_NAME}.nro" --sdmc "/switch/pwa2nx/${SAFE_NAME}.nro" --out "${SAFE_NAME}.nsp"
-          fi
+          export PATH="/opt/devkitpro/devkitA64/bin:/opt/devkitpro/tools/bin:$PATH"
+          python3 scripts/build_nsp.py "${{ matrix.name }}" "${SAFE_NAME}"
 
       - name: Upload Artifacts for Release Job
         uses: actions/upload-artifact@v7
