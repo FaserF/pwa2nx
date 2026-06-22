@@ -13,8 +13,9 @@
 #define APP_TITLE "Universal App"
 #endif
 
-// Version definition
+#ifndef APP_VERSION
 #define APP_VERSION "1.0.0"
+#endif
 
 #include "updater.h"
 
@@ -29,17 +30,28 @@ int main(int argc, char* argv[]) {
     printf("\x1b[16;20HInitializing " APP_TITLE " (v" APP_VERSION ")...");
     consoleUpdate(NULL);
 
-    // Initialize network sockets and check connectivity via NIFM
-    u32 ip = 0;
-    if (R_SUCCEEDED(nifmInitialize(NifmServiceType_User))) {
-        if (R_SUCCEEDED(nifmGetCurrentIpAddress(&ip)) && ip != 0) {
-            Result socket_rc = socketInitializeDefault();
-            if (R_SUCCEEDED(socket_rc)) {
-                check_and_apply_updates(argc, argv);
-                socketExit();
+    // Check pad state to see if Minus is held on boot to force update check
+    padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+    PadState pad;
+    padInitializeDefault(&pad);
+    padUpdate(&pad);
+    u64 keys_held = padGetKeysHeld(&pad);
+
+    if (keys_held & HidNpadButton_Minus) {
+        printf("\nUpdate check requested...\n");
+        consoleUpdate(NULL);
+        // Initialize network sockets and check connectivity via NIFM
+        u32 ip = 0;
+        if (R_SUCCEEDED(nifmInitialize(NifmServiceType_User))) {
+            if (R_SUCCEEDED(nifmGetCurrentIpAddress(&ip)) && ip != 0) {
+                Result socket_rc = socketInitializeDefault();
+                if (R_SUCCEEDED(socket_rc)) {
+                    check_and_apply_updates(argc, argv);
+                    socketExit();
+                }
             }
+            nifmExit();
         }
-        nifmExit();
     }
 
 

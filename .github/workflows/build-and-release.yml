@@ -118,9 +118,15 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       new_app_added: ${{ steps.set-matrix.outputs.new_app_added }}
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+      is_prerelease: ${{ steps.meta.outputs.is_prerelease }}
+      title: ${{ steps.meta.outputs.title }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -155,6 +161,29 @@ jobs:
           echo "matrix<<EOF" >> $GITHUB_OUTPUT
           echo "$MATRIX" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Calculate Version
+        id: meta
+        shell: bash
+        run: |
+          RTYPE="${{ github.event.inputs.release_type || 'stable' }}"
+          LEVEL="${{ github.event.inputs.bump_level || 'patch' }}"
+          OVERRIDE="${{ github.event.inputs.version_override || '' }}"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            NEW_VER=$(python3 scripts/version_manager.py bump --type "$RTYPE" --level "$LEVEL" --override "$OVERRIDE")
+            TAG="v${NEW_VER}"
+            IS_PRE="$( [ "$RTYPE" = 'stable' ] && echo 'false' || echo 'true' )"
+          else
+            TAG="${{ github.ref_name }}"
+            NEW_VER="${TAG#v}"
+            IS_PRE="false"
+          fi
+
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "version=${NEW_VER}" >> $GITHUB_OUTPUT
+          echo "is_prerelease=${IS_PRE}" >> $GITHUB_OUTPUT
+          echo "title=Release ${TAG}" >> $GITHUB_OUTPUT
 
       - name: Upload updated supported_apps.json
         if: steps.set-matrix.outputs.new_app_added == 'true'
@@ -200,12 +229,7 @@ jobs:
         shell: bash
         run: |
           sed -i 's/^APP_TITLE\t:=.*/APP_TITLE\t:=\t${{ matrix.name }}/g' Makefile
-          if [ "${{ github.ref_type }}" = "tag" ]; then
-            VERSION_NAME="${{ github.ref_name }}"
-            sed -i "s/^APP_VERSION\t:=.*/APP_VERSION\t:=\t${VERSION_NAME#v}/g" Makefile
-          else
-            sed -i "s/^APP_VERSION\t:=.*/APP_VERSION\t:=\t1.0.0-${{ github.run_number }}/g" Makefile
-          fi
+          sed -i "s/^APP_VERSION\t:=.*/APP_VERSION\t:=\t${{ needs.prep.outputs.version }}/g" Makefile
 
       - name: Build NRO
         run: |
@@ -265,40 +289,17 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - name: Calculate Version
-        id: meta
-        shell: bash
-        run: |
-          RTYPE="${{ github.event.inputs.release_type || 'stable' }}"
-          LEVEL="${{ github.event.inputs.bump_level || 'patch' }}"
-          OVERRIDE="${{ github.event.inputs.version_override || '' }}"
-
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            NEW_VER=$(python3 scripts/version_manager.py bump --type "$RTYPE" --level "$LEVEL" --override "$OVERRIDE")
-            TAG="v${NEW_VER}"
-            IS_PRE="$( [ "$RTYPE" = 'stable' ] && echo 'false' || echo 'true' )"
-          else
-            TAG="${{ github.ref_name }}"
-            NEW_VER="${TAG#v}"
-            IS_PRE="false"
-          fi
-
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
-          echo "version=${NEW_VER}" >> $GITHUB_OUTPUT
-          echo "is_prerelease=${IS_PRE}" >> $GITHUB_OUTPUT
-          echo "title=Release ${TAG}" >> $GITHUB_OUTPUT
-
       - name: Generate Advanced Changelog
         shell: bash
         run: |
-          python3 scripts/generate_release_body.py "${{ steps.meta.outputs.tag }}" > body.md
+          python3 scripts/generate_release_body.py "${{ needs.prep.outputs.tag }}" > body.md
           python3 scripts/generate_changelog.py >> body.md
 
       - name: Overwrite / Delete Existing Tag
         if: github.event.inputs.version_override != ''
         shell: bash
         run: |
-          TAG="${{ steps.meta.outputs.tag }}"
+          TAG="${{ needs.prep.outputs.tag }}"
           gh release delete "${TAG}" --yes 2>/dev/null || true
           git push --delete origin "${TAG}" 2>/dev/null || true
         env:
@@ -312,10 +313,10 @@ jobs:
             artifacts/*.nro
             artifacts/*.nsp
           fail_on_unmatched_files: false
-          name: ${{ steps.meta.outputs.title }}
-          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ needs.prep.outputs.title }}
+          tag_name: ${{ needs.prep.outputs.tag }}
           body_path: body.md
-          prerelease: ${{ steps.meta.outputs.is_prerelease == 'true' }}
+          prerelease: ${{ needs.prep.outputs.is_prerelease == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -340,7 +341,7 @@ jobs:
           fi
 
           # Bump dev version and update issue template placeholders
-          RELEASE_TAG="${{ steps.meta.outputs.tag }}"
+          RELEASE_TAG="${{ needs.prep.outputs.tag }}"
           python3 scripts/update_templates.py "${RELEASE_TAG#v}"
           python3 scripts/version_manager.py bump --type dev --level patch
           CHANGED_FILES="$CHANGED_FILES Makefile app.json .github/ISSUE_TEMPLATE/bug_report.yml"
@@ -358,7 +359,7 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          TAG="${{ steps.meta.outputs.tag }}"
+          TAG="${{ needs.prep.outputs.tag }}"
           echo "Build failed. Rolling back created tag/draft if any..."
           gh release delete "${TAG}" --yes || true
           git push --delete origin "${TAG}" || true

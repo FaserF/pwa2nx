@@ -18,7 +18,7 @@ INCLUDES	:=	include
 ARCH		:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 
 CFLAGS		:=	-g -Wall -O2 -ffunction-sections \
-				$(ARCH) -D__SWITCH__
+				$(ARCH) -D__SWITCH__ -DAPP_VERSION=\"$(APP_VERSION)\"
 
 PORTLIBS	?=	$(DEVKITPRO)/portlibs/switch
 INCLUDE		?=	-I$(DEVKITPRO)/libnx/include
