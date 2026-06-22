@@ -115,7 +115,7 @@ def is_noise(subject: str, author_name: str) -> bool:
 
 
 def get_primary_maintainers() -> set[str]:
-    maintainers = {"faserf", "faser", "fabian-seitz"}  # safety fallbacks
+    maintainers = {"faserf", "faser", "fabian-seitz", "fabian seitz", "fseitz"}  # safety fallbacks
     # Try reading from app.json
     try:
         if os.path.exists("app.json"):
@@ -232,15 +232,7 @@ def generate_changelog(
             md_output.extend(entries)
             md_output.append("")
 
-    # 3. Contributor attribution section
-    if contributors:
-        md_output.append("### 💖 Contributors")
-        md_output.append(
-            "A special thank you to all contributors who helped with this release:"
-        )
-        for user in sorted(contributors):
-            md_output.append(f"- @{user}")
-        md_output.append("")
+
 
     if not md_output:
         md_output.append("No user-facing changes since last release.")

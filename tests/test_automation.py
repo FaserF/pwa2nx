@@ -47,11 +47,11 @@ class TestVersionManager(unittest.TestCase):
     def test_calculate_version_dev(self) -> None:
         self.assertEqual(
             version_manager.calculate_version("dev", "patch", curr="1.0.0"),
-            "1.0.1-dev0",
+            "1.0.1.dev0",
         )
         self.assertEqual(
-            version_manager.calculate_version("dev", "patch", curr="1.0.1-dev0"),
-            "1.0.1-dev1",
+            version_manager.calculate_version("dev", "patch", curr="1.0.1.dev0"),
+            "1.0.1.dev1",
         )
 
     def test_calculate_version_override(self) -> None:

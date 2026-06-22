@@ -216,15 +216,6 @@ jobs:
         shell: bash
         run: |
           SAFE_NAME=$(echo "${{ matrix.name }}" | sed 's/[^a-zA-Z0-9]/_/g')
-          mkdir -p release/switch/pwa2nx
-          cp pwa2nx.nro release/switch/pwa2nx/${SAFE_NAME}.nro
-          
-          # Populate app.json dynamic config
-          jq --arg n "${{ matrix.name }}" --arg v "${{ github.run_number }}" '.name = $n | .version = $v' app.json > release/switch/pwa2nx/app.json
-          cp source/icon.png release/switch/pwa2nx/icon.png
-          
-          # Compress for Homebrew App Store direct-extract root
-          cd release && zip -r ../${SAFE_NAME}_Switch.zip switch/ && cd ..
           cp pwa2nx.nro ${SAFE_NAME}.nro
 
       - name: Upload Artifacts for Release Job
@@ -232,7 +223,6 @@ jobs:
         with:
           name: build-assets-${{ matrix.name }}
           path: |
-            *_Switch.zip
             *.nro
           if-no-files-found: error
 
@@ -284,15 +274,7 @@ jobs:
       - name: Generate Advanced Changelog
         shell: bash
         run: |
-          echo "## Release Details" > body.md
-          echo "- **Triggered by:** ${{ github.actor }}" >> body.md
-          echo "- **Version:** ${{ steps.meta.outputs.tag }}" >> body.md
-          echo "- **Commit SHA:** ${{ github.sha }}" >> body.md
-          echo "- **Date:** $(date -u)" >> body.md
-          echo "" >> body.md
-          echo "### 📦 Bundled Packages" >> body.md
-          echo "Extract the matching \`*_Switch.zip\` file directly into your SD card root (or place the \`.nro\` in your \`/switch/pwa2nx/\` directory)." >> body.md
-          echo "" >> body.md
+          python3 scripts/generate_release_body.py "${{ steps.meta.outputs.tag }}" > body.md
           python3 scripts/generate_changelog.py >> body.md
 
       - name: Overwrite / Delete Existing Tag
@@ -310,7 +292,6 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            artifacts/*_Switch.zip
             artifacts/*.nro
           name: ${{ steps.meta.outputs.title }}
           tag_name: ${{ steps.meta.outputs.tag }}

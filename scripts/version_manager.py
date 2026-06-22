@@ -20,7 +20,7 @@ def get_current_version() -> str:
         v_tags = []
         for tag in tags:
             tag = tag.strip()
-            match = re.match(r"^v?(\d+)\.(\d+)\.(\d+)(?:(b)(\d+)|(-dev)(\d+))?$", tag)
+            match = re.match(r"^v?(\d+)\.(\d+)\.(\d+)(?:(b)(\d+)|(\.dev)(\d+))?$", tag)
             if match:
                 y, m, p, bp, bn, dp, dn = match.groups()
                 v_tags.append(
@@ -74,13 +74,13 @@ def calculate_version(
     if curr is None:
         curr = get_current_version()
 
-    match = re.match(r"^v?(\d+)\.(\d+)\.(\d+)(?:(b)(\d+)|(-dev)(\d+))?$", curr)
+    match = re.match(r"^v?(\d+)\.(\d+)\.(\d+)(?:(b)(\d+)|(\.dev)(\d+))?$", curr)
     if not match:
         return "0.0.0"
 
     v1_str, v2_str, v3_str, b_p, b_n, d_p, d_n = match.groups()
     v1, v2, v3 = int(v1_str), int(v2_str), int(v3_str)
-    stype = "b" if b_p else ("-dev" if d_p else None)
+    stype = "b" if b_p else (".dev" if d_p else None)
     snum = int(b_n) if b_p else (int(d_n) if d_p else 0)
 
     if rtype == "stable":
@@ -100,13 +100,13 @@ def calculate_version(
             return f"{v1}.{v2 + 1}.0b0"
         return f"{v1}.{v2}.{v3 + 1}b0"
     if rtype in ["dev", "nightly"]:
-        if stype == "-dev":
-            return f"{v1}.{v2}.{v3}-dev{snum + 1}"
+        if stype == ".dev":
+            return f"{v1}.{v2}.{v3}.dev{snum + 1}"
         if level == "major":
-            return f"{v1 + 1}.0.0-dev0"
+            return f"{v1 + 1}.0.0.dev0"
         if level == "minor":
-            return f"{v1}.{v2 + 1}.0-dev0"
-        return f"{v1}.{v2}.{v3 + 1}-dev0"
+            return f"{v1}.{v2 + 1}.0.dev0"
+        return f"{v1}.{v2}.{v3 + 1}.dev0"
 
     return curr
 
