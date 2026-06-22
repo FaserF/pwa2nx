@@ -31,10 +31,13 @@ int main(int argc, char* argv[]) {
     consoleUpdate(NULL);
 
     // Check pad state to see if Minus is held on boot to force update check
-    hidScanInput();
-    u64 keys_held = hidKeysHeld(CONTROLLER_P1_AUTO);
+    padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+    PadState pad;
+    padInitializeDefault(&pad);
+    padUpdate(&pad);
+    u64 keys_held = padGetButtons(&pad);
 
-    if (keys_held & KEY_MINUS) {
+    if (keys_held & HidNpadButton_Minus) {
         printf("\nUpdate check requested...\n");
         consoleUpdate(NULL);
         // Initialize network sockets and check connectivity via NIFM
