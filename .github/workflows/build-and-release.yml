@@ -199,7 +199,7 @@ jobs:
       - name: Update Makefile App Metadata
         shell: bash
         run: |
-          sed -i 's/^APP_TITLE\t:=.*/APP_TITLE\t:=\t"${{ matrix.name }}"/g' Makefile
+          sed -i 's/^APP_TITLE\t:=.*/APP_TITLE\t:=\t${{ matrix.name }}/g' Makefile
           if [ "${{ github.ref_type }}" = "tag" ]; then
             VERSION_NAME="${{ github.ref_name }}"
             sed -i "s/^APP_VERSION\t:=.*/APP_VERSION\t:=\t${VERSION_NAME#v}/g" Makefile
