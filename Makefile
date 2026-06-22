@@ -59,7 +59,7 @@ NACPFILE	:=	$(OUTPUT).nacp
 
 APP_TITLE	:=	pwa2nx
 APP_AUTHOR	:=	FaserF
-APP_VERSION	:=	0.1.1.dev0
+APP_VERSION	:=	1.0.1.dev0
 
 #---------------------------------------------------------------------------------
 # Find files
