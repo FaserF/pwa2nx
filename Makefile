@@ -59,7 +59,7 @@ NACPFILE	:=	$(OUTPUT).nacp
 
 APP_TITLE	:=	PWA Wrapper
 APP_AUTHOR	:=	pwa2nx Team
-APP_VERSION	:=	1.0.0
+APP_VERSION	:=	1.0.1-dev0
 
 #---------------------------------------------------------------------------------
 # Find files

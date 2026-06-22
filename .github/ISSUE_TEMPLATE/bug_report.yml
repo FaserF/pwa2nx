@@ -64,7 +64,7 @@ body:
     attributes:
       label: App Version
       description: Which version of pwa2nx or the generated NRO are you running?
-      placeholder: e.g. 1.0.0
+      placeholder: e.g. 0.1.0
     validations:
       required: true
 
