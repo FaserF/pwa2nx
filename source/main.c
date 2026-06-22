@@ -37,6 +37,27 @@ int main(int argc, char* argv[]) {
     padUpdate(&pad);
     u64 keys_held = padGetButtons(&pad);
 
+    // Guard against running in Applet Mode (HBL via Album) which lacks memory for web applet
+    AppletType at = appletGetAppletType();
+    if (at != AppletType_Application) {
+        printf("\n\n\x1b[31m[ERROR] Running in Applet Mode!\x1b[37m\n");
+        printf("This app requires more memory to launch the Web Applet.\n");
+        printf("Please launch the Homebrew Launcher via Title Takeover\n");
+        printf("(hold [R] while launching any installed game)\n");
+        printf("or install and use the NSP forwarder.\n\n");
+        printf("Press [Plus] to exit...\n");
+        consoleUpdate(NULL);
+        
+        while (appletMainLoop()) {
+            padUpdate(&pad);
+            if (padGetButtonsDown(&pad) & HidNpadButton_Plus) {
+                break;
+            }
+        }
+        consoleExit(NULL);
+        return 0;
+    }
+
     if (keys_held & HidNpadButton_Minus) {
         printf("\nUpdate check requested...\n");
         consoleUpdate(NULL);

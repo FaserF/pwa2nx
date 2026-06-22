@@ -2,7 +2,7 @@
   {"name": "Telegram", "url": "https://web.telegram.org/a/", "icon": ""},
   {"name": "Disney Plus", "url": "https://www.disneyplus.com", "icon": ""},
   {"name": "Home Assistant", "url": "https://my.home-assistant.io/", "icon": ""},
-  {"name": "Spotify", "url": "https://open.spotify.com", "icon": ""},
+  {"name": "Spotify", "url": "https://open.spotify.com", "icon": "https://open.spotifycdn.com/cdn/images/icons/Spotify_MWP_512.50dd387d.png"},
   {"name": "SoundCloud", "url": "https://soundcloud.com", "icon": ""},
   {"name": "YT Music", "url": "https://music.youtube.com", "icon": ""},
   {"name": "Universal App", "url": "universal", "icon": ""}

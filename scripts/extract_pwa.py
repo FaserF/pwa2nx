@@ -47,27 +47,45 @@ def fetch_manifest_url(url: str) -> str | None:
 
 
 def download_and_resize_icon(icon_url: str, dest_path: str) -> bool:
+    tmp_path = dest_path + ".tmp"
     try:
-        r = requests.get(icon_url, timeout=10, stream=True)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        r = requests.get(icon_url, timeout=10, stream=True, headers=headers)
         if r.status_code == 200:
             os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-            with open(dest_path + ".tmp", "wb") as f:
+            with open(tmp_path, "wb") as f:
                 for chunk in r.iter_content(chunk_size=128):
                     f.write(chunk)
 
+            # Check if it's a Git LFS pointer
+            is_lfs = False
+            with open(tmp_path, "rb") as f:
+                head = f.read(100)
+                if b"version https://git-lfs.github.com" in head:
+                    is_lfs = True
+
+            if is_lfs:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+                print(f"Skipping Git LFS pointer icon from {icon_url}")
+                return False
+
             # Resize to 256x256 JPEG
-            with Image.open(dest_path + ".tmp") as img:
-                if img.mode in ("RGBA", "LA") or (
-                    img.mode == "P" and "transparency" in img.info
-                ):
+            with Image.open(tmp_path) as img:
+                if img.mode != "RGB":
                     img = img.convert("RGB")
                 resized_img = img.resize((256, 256), Image.Resampling.LANCZOS)
                 resized_img.save(dest_path, "JPEG")
-            os.remove(dest_path + ".tmp")
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
             print(f"Successfully processed icon: {dest_path}")
             return True
     except Exception as e:
         print(f"Failed to process icon from {icon_url}: {e}")
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
     return False
 
 
@@ -106,7 +124,7 @@ def main() -> None:
     if "icons" in manifest_data and manifest_data["icons"]:
         # Sort icons to find the largest or one matching 256/512
         icons = manifest_data["icons"]
-        best_icon = sorted(
+        sorted_icons = sorted(
             icons,
             key=lambda x: (
                 int(x.get("sizes", "0").split("x")[0])
@@ -114,12 +132,15 @@ def main() -> None:
                 else 0
             ),
             reverse=True,
-        )[0]
-        icon_href = best_icon.get("src")
-        if icon_href:
-            best_icon_url = urljoin(manifest_url or target_url, icon_href)
-            print(f"PWA Icon identified: {best_icon_url}")
-            found_icon = download_and_resize_icon(best_icon_url, args.output_icon)
+        )
+        for icon_candidate in sorted_icons:
+            icon_href = icon_candidate.get("src")
+            if icon_href:
+                best_icon_url = urljoin(manifest_url or target_url, icon_href)
+                print(f"PWA Icon identified: {best_icon_url}")
+                found_icon = download_and_resize_icon(best_icon_url, args.output_icon)
+                if found_icon:
+                    break
 
     if not found_icon and icon_src:
         print(f"Attempting fallback icon URL: {icon_src}")
