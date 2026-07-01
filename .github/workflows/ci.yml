@@ -18,12 +18,12 @@ jobs:
     if: github.event.pull_request.draft == false || github.event_name != 'pull_request'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.3.0
         with:
-          python-version: '3.14'
+          python-version: '3.14.6'
 
       - name: Install Linting & Test dependencies
         run: |
@@ -40,7 +40,7 @@ jobs:
           ruff format scripts/ tests/
 
       - name: Commit auto-fixes
-        uses: stefanzweifel/git-auto-commit-action@v7
+        uses: stefanzweifel/git-auto-commit-action@v7.2.0
         with:
           commit_message: "style: auto-fix and format with Ruff [skip ci]"
           commit_user_name: "github-actions[bot]"
@@ -66,10 +66,10 @@ jobs:
     container: devkitpro/devkita64:latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.0
 
       - name: Cache APT packages
-        uses: actions/cache@v6
+        uses: actions/cache@v6.1.0
         with:
           path: /var/cache/apt/archives
           key: ${{ runner.os }}-apt-cache
