@@ -61,12 +61,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.3.0
         with:
-          python-version: '3.14'
+          python-version: '3.14.6'
 
       - name: Install dependencies
         run: |
@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 2
 
@@ -124,14 +124,14 @@ jobs:
       title: ${{ steps.meta.outputs.title }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.3.0
         with:
-          python-version: '3.14'
+          python-version: '3.14.6'
 
       - name: Resolve app matrix from supported_apps.json
         id: set-matrix
@@ -187,7 +187,7 @@ jobs:
 
       - name: Upload updated supported_apps.json
         if: steps.set-matrix.outputs.new_app_added == 'true'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: updated-supported-apps
           path: supported_apps.json
@@ -203,10 +203,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.0
 
       - name: Cache APT packages
-        uses: actions/cache@v6
+        uses: actions/cache@v6.1.0
         with:
           path: /var/cache/apt/archives
           key: ${{ runner.os }}-apt-cache
@@ -255,7 +255,7 @@ jobs:
           rm pwa2nx.nro
 
       - name: Upload Artifacts for Release Job
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: build-assets-${{ matrix.name }}
           path: |
@@ -270,17 +270,17 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.3.0
         with:
-          python-version: '3.14'
+          python-version: '3.14.6'
 
       - name: Download all build artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v8.0.1
         with:
           path: artifacts
           merge-multiple: true
@@ -303,7 +303,7 @@ jobs:
 
       - name: Publish GitHub Release
         id: publish_release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v3.0.1
         with:
           files: |
             artifacts/*.nro
