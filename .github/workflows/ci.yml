@@ -1,88 +1,14 @@
-name: CI Validation & Linting
+name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, master]
   pull_request:
-    branches:
-      - main
-
-permissions:
-  contents: write
+    branches: [main, master]
 
 jobs:
-  lint-and-validate:
-    name: Code Quality & Checks
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false || github.event_name != 'pull_request'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7.0.1
-
-      - name: Set up Python
-        uses: actions/setup-python@v7.1.0
-        with:
-          python-version: '3.15.2'
-
-      - name: Install Linting & Test dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
-
-      - name: Check JSON Validity
-        run: |
-          python -c "import json, glob; [json.load(open(f, encoding='utf-8-sig')) for f in glob.glob('**/*.json', recursive=True) if '.git' not in f]"
-
-      - name: Auto-fix and format with Ruff
-        run: |
-          ruff check --fix scripts/ tests/
-          ruff format scripts/ tests/
-
-      - name: Commit auto-fixes
-        uses: stefanzweifel/git-auto-commit-action@v7.2.1
-        with:
-          commit_message: "style: auto-fix and format with Ruff [skip ci]"
-          commit_user_name: "github-actions[bot]"
-          commit_user_email: "github-actions[bot]@users.noreply.github.com"
-
-      - name: Install Cppcheck
-        run: sudo apt-get update && sudo apt-get install -y cppcheck
-
-      - name: Static Code Analysis (Cppcheck)
-        run: |
-          cppcheck --error-exitcode=1 \
-            --enable=warning,style,performance,portability \
-            --suppress=missingIncludeSystem \
-            source/
-
-      - name: Run Python Unit Tests
-        run: pytest tests/
-
-  compile-check:
-    name: Compile Verification (devkitPro)
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false || github.event_name != 'pull_request'
-    container: devkitpro/devkita64:latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7.0.1
-
-      - name: Cache APT packages
-        uses: actions/cache@v6.1.0
-        with:
-          path: /var/cache/apt/archives
-          key: ${{ runner.os }}-apt-cache
-
-      - name: Install build dependencies
-        run: |
-          apt-get update && apt-get install -y python3-pip python3-pillow python3-requests python3-bs4 curl jq zip
-
-      - name: Generate Dummy Configuration
-        run: |
-          python3 scripts/extract_pwa.py --url universal --name "Universal App"
-
-      - name: Compile Switch Wrapper
-        run: |
-          export PATH="/opt/devkitpro/devkitA64/bin:/opt/devkitpro/tools/bin:$PATH"
-          make clean && make -j$(nproc)
+  ci:
+    uses: FaserF/repo-template/.github/workflows/reusable-ci.yml@main
+    with:
+      project_type: "generic"
+    secrets: inherit
