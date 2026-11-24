@@ -1,27 +1,21 @@
-# GitHub Labeler Configuration for pwa2nx
+# Pull Request Labeler configuration
+enhancement:
+  - head-branch: ['^feat/', '^feature/']
 
-source-code:
-  - changed-files:
-    - any-glob-to-any-file: 'source/**/*'
+bug:
+  - head-branch: ['^fix/', '^bugfix/']
 
-scripts:
-  - changed-files:
-    - any-glob-to-any-file: 'scripts/**/*'
-
-ci-cd:
-  - changed-files:
-    - any-glob-to-any-file: '.github/**/*'
+dependencies:
+  - head-branch: ['^renovate/', '^deps/']
 
 documentation:
   - changed-files:
-    - any-glob-to-any-file: '/**/*.md'
-    - any-glob-to-any-file: 'LICENSE'
+    - any-glob-to-any-file: ['**/*.md', 'docs/**']
+
+ci:
+  - changed-files:
+    - any-glob-to-any-file: ['.github/**', 'scripts/**']
 
 tests:
   - changed-files:
-    - any-glob-to-any-file: 'tests/**/*'
-
-metadata:
-  - changed-files:
-    - any-glob-to-any-file: 'app.json'
-    - any-glob-to-any-file: 'Makefile'
+    - any-glob-to-any-file: ['tests/**', '**/*test*']
